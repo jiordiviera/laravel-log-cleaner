@@ -1,1 +1,1 @@
-{"version":1,"defects":{"Warning":6},"times":{"Warning":0.028}}
+{"version":1,"defects":{"Warning":6},"times":{"Warning":0.028,"D:\\Sites\\Laravel\\laravel-log-cleaner\\tests\\ExampleTest.php::example":0.24,"D:\\Sites\\Laravel\\laravel-log-cleaner\\tests\\Feature\\ClearLogCommandTest.php::it":0.031}}
