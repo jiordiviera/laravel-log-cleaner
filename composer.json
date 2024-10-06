@@ -1,0 +1,50 @@
+{
+  "name": "jiordiviera/laravel-log-cleaner",
+  "description": "A package to clean laravel logs",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Jiordi Viera",
+      "email": "jiordikengne@gmail.com"
+    }
+  ],
+  "require": {
+    "php": "^8.0",
+    "illuminate/support": "^9.0",
+    "illuminate/console": "^9.0"
+  },
+  "require-dev": {
+    "orchestra/testbench": "^7.46",
+    "pestphp/pest": "^1.23",
+    "pestphp/pest-plugin-laravel": "^1.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "JiordiViera\\LaravelLogCleaner\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "JiordiViera\\LaravelLogCleaner\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "vendor/bin/pest",
+    "test-coverage": "vendor/bin/pest --coverage"
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "JiordiViera\\LaravelLogCleaner\\LaravelLogCleanerServiceProvider"
+      ]
+    }
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true,
+  "config": {
+    "allow-plugins": {
+      "pestphp/pest-plugin": true
+    }
+  }
+}
