@@ -6,7 +6,8 @@
   "authors": [
     {
       "name": "Jiordi Viera",
-      "email": "jiordikengne@gmail.com"
+      "email": "jiordikengne@gmail.com",
+      "role": "Owner"
     }
   ],
   "require": {
