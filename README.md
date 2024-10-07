@@ -3,89 +3,92 @@
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/jiordiviera/laravel-log-cleaner.svg?style=flat-square)](https://packagist.org/packages/jiordiviera/laravel-log-cleaner)
 [![Total Downloads](https://img.shields.io/packagist/dt/jiordiviera/laravel-log-cleaner.svg?style=flat-square)](https://packagist.org/packages/jiordiviera/laravel-log-cleaner)
 
-**Laravel Log Cleaner** est un package simple permettant de nettoyer le contenu du fichier de logs `laravel.log` via une commande Artisan. Ce package est compatible avec Laravel 9, 10, et 11.
+**Laravel Log Cleaner** is a simple package that allows you to clear the content of the `laravel.log` file using an Artisan command. This package is compatible with Laravel versions 7, 8, 9, 10, and 11.
 
 ## Installation
 
-Tu peux installer ce package via **Composer** en utilisant la commande suivante :
+Install the package via **Composer** by running:
 
 ```bash
 composer require jiordiviera/laravel-log-cleaner
 ```
 
-## Compatibilité
+## Compatibility
 
+- Laravel 7.x
+- Laravel 8.x
 - Laravel 9.x
 - Laravel 10.x
 - Laravel 11.x
 
-## Utilisation
+## Usage
 
-Ce package ajoute une commande Artisan permettant de supprimer le contenu du fichier `laravel.log`. Pour utiliser cette commande, exécute :
+This package adds an Artisan command to clear the content of the `laravel.log` file. To use this command, run:
 
 ```bash
 php artisan log:clear
 ```
 
-Lorsque tu exécutes cette commande, tout le contenu du fichier `laravel.log` est supprimé, et un message de confirmation est affiché.
+When you execute this command, all content in the `laravel.log` file will be cleared, and a confirmation message will be displayed.
 
-### Exemple
+### Example
 
 ```bash
+
 $ php artisan log:clear
 Laravel log file cleared successfully.
 ```
 
 ## Configuration
 
-Aucune configuration supplémentaire n'est nécessaire. Dès que le package est installé, la commande `log:clear` est disponible.
+No additional configuration is required. Once the package is installed, the `log:clear` command is ready to use.
 
-## Tests
+## Running Tests
 
-Pour tester ce package, nous utilisons **Pest**. Pour lancer les tests, exécute la commande suivante :
+This package uses **Pest** for testing. To run the tests, use:
 
 ```bash
 ./vendor/bin/pest
 ```
 
-Assure-toi d'avoir les tests correctement définis dans le dossier `tests/`.
+Ensure your tests are correctly defined in the `tests/` directory.
 
-## Contribution
+## Contributing
 
-Les contributions sont les bienvenues ! N'hésite pas à soumettre des **Issues** ou des **Pull Requests** via [GitHub](https://github.com/jiordiviera/laravel-log-cleaner).
+Contributions are welcome! Feel free to submit **Issues** or **Pull Requests** via [GitHub](https://github.com/jiordiviera/laravel-log-cleaner).
 
-### Développement
+### Development Workflow
 
-Pour démarrer avec le développement :
+If you want to contribute:
 
-1. Clone le repository :
+1. Clone the repository:
 
    ```bash
    git clone https://github.com/jiordiviera/laravel-log-cleaner.git
    ```
 
-2. Installe les dépendances :
+2. Install dependencies:
 
    ```bash
    composer install
    ```
 
-3. Lance les tests :
+3. Run tests:
 
    ```bash
    ./vendor/bin/pest
    ```
 
-## À propos
+## About
 
-Ce package a été développé pour simplifier la gestion des fichiers de logs dans un projet Laravel. Plutôt que de supprimer manuellement les logs, tu peux maintenant le faire en une seule commande.
+This package was developed to simplify log file management in Laravel projects. Instead of manually clearing the logs, you can now achieve it with a single command.
 
-## Licence
+## License
 
-Le package Laravel Log Cleaner est open-source sous la licence [MIT](https://opensource.org/licenses/MIT).
+The Laravel Log Cleaner package is open-source software licensed under the [MIT License](https://opensource.org/licenses/MIT).
 
 ---
 
-> **Note :** Ce package a été développé avec Laravel 11, mais il est également compatible avec les versions antérieures de Laravel (9 et 10).
+> **Note:** Although this package was initially developed with Laravel 11, it is also compatible with earlier versions of Laravel (7, 8, 9, and 10).
 
-Pour plus d'informations, consulte [le repository sur GitHub](https://github.com/jiordiviera/laravel-log-cleaner).
+For more information, visit the [GitHub repository](https://github.com/jiordiviera/laravel-log-cleaner).
