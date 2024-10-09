@@ -23,20 +23,34 @@ composer require jiordiviera/laravel-log-cleaner
 
 ## Usage
 
-This package adds an Artisan command to clear the content of the `laravel.log` file. To use this command, run:
+This package adds an Artisan command to clear the content of the `laravel.log` file. There are two ways to use this command:
+
+1. To clear all logs:
 
 ```bash
 php artisan log:clear
 ```
 
-When you execute this command, all content in the `laravel.log` file will be cleared, and a confirmation message will be displayed.
-
-### Example
+2. To clear logs older than a specified number of days:
 
 ```bash
+php artisan log:clear --days=30
+```
 
+Replace `30` with the number of days you want to keep. This will remove all log entries older than the specified number of days.
+
+### Examples
+
+Clear all logs:
+```bash
 $ php artisan log:clear
-Laravel log file cleared successfully.
+Log file cleared successfully.
+```
+
+Clear logs older than 30 days:
+```bash
+$ php artisan log:clear --days=30
+Logs older than 30 days have been removed.
 ```
 
 ## Configuration
@@ -81,7 +95,7 @@ If you want to contribute:
 
 ## About
 
-This package was developed to simplify log file management in Laravel projects. Instead of manually clearing the logs, you can now achieve it with a single command.
+This package was developed to simplify log file management in Laravel projects. Instead of manually clearing the logs, you can now achieve it with a single command, with the option to selectively remove older logs.
 
 ## License
 
