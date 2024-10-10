@@ -1,5 +1,5 @@
 # Laravel Log Cleaner
-
+  
 <p align="center">
   <a href="https://packagist.org/packages/jiordiviera/laravel-log-cleaner"><img src="https://img.shields.io/packagist/v/jiordiviera/laravel-log-cleaner?style=for-the-badge" alt="Latest Stable Version"></a>
   <a href="https://packagist.org/packages/jiordiviera/laravel-log-cleaner"><img src="https://img.shields.io/packagist/dt/jiordiviera/laravel-log-cleaner?style=for-the-badge" alt="Total Downloads"></a>
