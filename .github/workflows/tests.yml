@@ -17,16 +17,23 @@ jobs:
             laravel-version: '9.*'
           - php-version: '7.2.5'
             laravel-version: '10.*'
+          - php-version: '7.2.5'
+            laravel-version: '11.*'
           - php-version: '7.4'
             laravel-version: '9.*'
           - php-version: '7.4'
             laravel-version: '10.*'
           - php-version: '7.4'
             laravel-version: '11.*'
+          - php-version: '7.2.5'
+            laravel-version: '8.*'  # Laravel 8 nécessite PHP 7.3 ou plus
+          - php-version: '7.2.5'
+            laravel-version: '7.*'  # Laravel 7 minimum PHP 7.3
           - php-version: '8.0'
             laravel-version: '7.*'
           - php-version: '8.0'
             laravel-version: '11.*'
+
 
     name: PHP ${{ matrix.php-version }} - Laravel ${{ matrix.laravel-version }}
 
