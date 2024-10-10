@@ -8,24 +8,17 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         php-versions: ['7.4', '8.0', '8.1', '8.2']
         laravel-versions: ['7.*', '8.*', '9.*', '10.*', '11.*']
         exclude:
-          - php-versions: '7.4'
-            laravel-versions: '9.*'
           - php-versions: '7.4'
             laravel-versions: '10.*'
           - php-versions: '7.4'
             laravel-versions: '11.*'
           - php-versions: '8.0'
             laravel-versions: '11.*'
-          - php-versions: '8.1'
-            laravel-versions: '7.*'
-          - php-versions: '8.2'
-            laravel-versions: '7.*'
-          - php-versions: '8.2'
-            laravel-versions: '8.*'
 
     name: P${{ matrix.php-versions }} - L${{ matrix.laravel-versions }}
 
@@ -38,10 +31,7 @@ jobs:
           php-version: ${{ matrix.php-versions }}
           extensions: mbstring, dom, fileinfo
           coverage: xdebug
-      - name: Show installed versions
-        run: |
-          php --version
-          composer show laravel/framework
+
       - name: Get composer cache directory
         id: composer-cache
         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
@@ -56,7 +46,12 @@ jobs:
       - name: Install Composer dependencies
         run: |
           composer require "laravel/framework:${{ matrix.laravel-versions }}" --no-interaction --no-update
-          composer update --prefer-dist --no-interaction --ignore-platform-reqs
+          composer update --prefer-dist --no-interaction --no-progress
+
+      - name: Show installed versions
+        run: |
+          php --version
+          composer show laravel/framework
 
       - name: Run test suite
-        run: ./vendor/bin/pest
+        run: vendor/bin/pest
