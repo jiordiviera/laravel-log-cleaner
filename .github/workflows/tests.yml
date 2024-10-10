@@ -1,39 +1,49 @@
-name: Run Tests on Pull Request
+name: Laravel Log Cleaner Tests
 
 on:
+  push:
+    branches: [ "main" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "main" ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        php-versions: ['7.4', '8.0', '8.1', '8.2']
-        laravel-versions: ['7.*', '8.*', '9.*', '10.*', '11.*']
+        php: [ '7.3', '7.4', '8.0', '8.1', '8.2' ]
+        laravel: [ '8.*', '9.*', '10.*', '11.*' ]
         exclude:
-          - php-versions: '7.4'
-            laravel-versions: '7.*'
-          - php-versions: '7.4'
-            laravel-versions: '8.*'
-          - php-versions: '7.4'
-            laravel-versions: '10.*'
-          - php-versions: '7.4'
-            laravel-versions: '11.*'
-          - php-versions: '8.0'
-            laravel-versions: '11.*'
-          - php-versions: '8.0'
-            laravel-versions: '8.*'
-          - php-versions: '8.0'
-            laravel-versions: '10.*'
-          - php-versions: '7.4'
-            laravel-versions: '8.*'
-          - php-versions: '7.4'
-            laravel-versions: '9.*'
-          - php-versions: '7.4'
-            laravel-versions: '10.*'
+          # Laravel 8 and above require PHP 7.3+, so exclude Laravel 8+ with PHP 7.2.5
+          - php: '7.3'
+            laravel: '9.*'
+          - php: '7.3'
+            laravel: '10.*'
+          - php: '7.3'
+            laravel: '11.*'
+          # Laravel 9 and above require PHP 8.0+, exclude incompatible PHP versions
+          - php: '7.4'
+            laravel: '9.*'
+          - php: '7.4'
+            laravel: '10.*'
+          - php: '7.4'
+            laravel: '11.*'
+          # Laravel 7 is not compatible with PHP 8.0 and above
+#          - php: '8.0'
+#            laravel: '7.*'
+#          - php: '8.1'
+#            laravel: '7.*'
+#          - php: '8.2'
+#            laravel: '7.*'
+          # Exclude Laravel 10 and 11 for PHP 8.0
+          - php: '8.0'
+            laravel: '10.*'
+          - php: '8.0'
+            laravel: '11.*'
 
-    name: P${{ matrix.php-versions }} - L${{ matrix.laravel-versions }}
+
+    name: P${{ matrix.php }} - L${{ matrix.laravel }}
 
     steps:
       - uses: actions/checkout@v3
@@ -41,25 +51,41 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php-versions }}
-          extensions: mbstring, dom, fileinfo
-          coverage: xdebug
+          php: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite
+          coverage: none
 
-      - name: Get composer cache directory
-        id: composer-cache
-        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-
-      - name: Cache composer dependencies
-        uses: actions/cache@v3
-        with:
-          path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
-
-      - name: Install Composer dependencies
+      - name: Install dependencies
         run: |
-          composer require "laravel/framework:${{ matrix.laravel-versions }}" --no-interaction --no-update
-          composer update --prefer-dist --no-interaction
+          composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update
+          composer update --prefer-dist --no-interaction --no-progress
 
-      - name: Run test suite
-        run: ./vendor/bin/pest
+      - name: Create Laravel Project
+        run: |
+          composer create-project --prefer-dist laravel/laravel:${{ matrix.laravel }} test-app
+          cd test-app
+          composer require jiordiviera/laravel-log-cleaner
+
+      - name: Generate Log Files
+        run: |
+          cd test-app
+          php artisan tinker --execute="Log::info('Test log entry');"
+          php artisan tinker --execute="Log::error('Test error entry');"
+
+      - name: Run Log Cleaner
+        run: |
+          cd test-app
+          php artisan log:clear
+
+      - name: Check Log Files
+        run: |
+          cd test-app/storage/logs
+          if [ -s laravel.log ]; then
+            echo "Log file is not empty"
+            exit 1
+          else
+            echo "Log file is empty or does not exist"
+          fi
+
+      - name: Run Package Tests
+        run: vendor/bin/pest
