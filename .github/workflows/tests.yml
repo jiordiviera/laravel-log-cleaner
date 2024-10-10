@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         php: [ '7.3', '7.4', '8.0', '8.1', '8.2' ]
-        laravel: [ '7.*', '8.*', '9.*', '10.*', '11.*' ]
+        laravel: [ '8.*', '9.*', '10.*', '11.*' ]
         exclude:
           # Laravel 8 and above require PHP 7.3+, so exclude Laravel 8+ with PHP 7.2.5
           - php: '7.3'
@@ -30,12 +30,12 @@ jobs:
           - php: '7.4'
             laravel: '11.*'
           # Laravel 7 is not compatible with PHP 8.0 and above
-          - php: '8.0'
-            laravel: '7.*'
-          - php: '8.1'
-            laravel: '7.*'
-          - php: '8.2'
-            laravel: '7.*'
+#          - php: '8.0'
+#            laravel: '7.*'
+#          - php: '8.1'
+#            laravel: '7.*'
+#          - php: '8.2'
+#            laravel: '7.*'
           # Exclude Laravel 10 and 11 for PHP 8.0
           - php: '8.0'
             laravel: '10.*'
