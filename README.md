@@ -1,7 +1,12 @@
 # Laravel Log Cleaner
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/jiordiviera/laravel-log-cleaner.svg?style=flat-square)](https://packagist.org/packages/jiordiviera/laravel-log-cleaner)
-[![Total Downloads](https://img.shields.io/packagist/dt/jiordiviera/laravel-log-cleaner.svg?style=flat-square)](https://packagist.org/packages/jiordiviera/laravel-log-cleaner)
+<p align="center">
+  <a href="https://packagist.org/packages/jiordiviera/laravel-log-cleaner"><img src="https://img.shields.io/packagist/v/jiordiviera/laravel-log-cleaner?style=for-the-badge" alt="Latest Stable Version"></a>
+  <a href="https://packagist.org/packages/jiordiviera/laravel-log-cleaner"><img src="https://img.shields.io/packagist/dt/jiordiviera/laravel-log-cleaner?style=for-the-badge" alt="Total Downloads"></a>
+  <a href="https://packagist.org/packages/jiordiviera/laravel-log-cleaner"><img src="https://img.shields.io/packagist/v/jiordiviera/laravel-log-cleaner?include_prereleases&style=for-the-badge" alt="Latest Unstable Version"></a>
+  <a href="https://packagist.org/packages/jiordiviera/laravel-log-cleaner"><img src="https://img.shields.io/packagist/l/jiordiviera/laravel-log-cleaner?style=for-the-badge" alt="License"></a>
+  <a href="https://github.com/jiordiviera/laravel-log-cleaner/actions/workflows/tests.yml"><img src="https://github.com/jiordiviera/laravel-log-cleaner/actions/workflows/tests.yml/badge.svg" alt="Tests Status" style="for-the-badge"/></a>
+</p>
 
 **Laravel Log Cleaner** is a simple package that allows you to clear the content of the `laravel.log` file using an Artisan command. This package is compatible with Laravel versions 7, 8, 9, 10, and 11.
 
