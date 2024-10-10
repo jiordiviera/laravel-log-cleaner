@@ -12,35 +12,35 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php-version: [ '7.3', '7.4', '8.0', '8.1', '8.2' ]
-        laravel-version: [ '7.*', '8.*', '9.*', '10.*', '11.*' ]
+        php: [ '7.3', '7.4', '8.0', '8.1', '8.2' ]
+        laravel: [ '7.*', '8.*', '9.*', '10.*', '11.*' ]
         exclude:
           # Laravel 8 and above require PHP 7.3+, so exclude Laravel 8+ with PHP 7.2.5
-          - php-version: '7.3'
-            laravel-version: '9.*'
-          - php-version: '7.3'
-            laravel-version: '10.*'
-          - php-version: '7.3'
-            laravel-version: '11.*'
+          - php: '7.3'
+            laravel: '9.*'
+          - php: '7.3'
+            laravel: '10.*'
+          - php: '7.3'
+            laravel: '11.*'
           # Laravel 9 and above require PHP 8.0+, exclude incompatible PHP versions
-          - php-version: '7.4'
-            laravel-version: '9.*'
-          - php-version: '7.4'
-            laravel-version: '10.*'
-          - php-version: '7.4'
-            laravel-version: '11.*'
+          - php: '7.4'
+            laravel: '9.*'
+          - php: '7.4'
+            laravel: '10.*'
+          - php: '7.4'
+            laravel: '11.*'
           # Laravel 7 is not compatible with PHP 8.0 and above
-          - php-version: '8.0'
-            laravel-version: '7.*'
-          - php-version: '8.1'
-            laravel-version: '7.*'
-          - php-version: '8.2'
-            laravel-version: '7.*'
+          - php: '8.0'
+            laravel: '7.*'
+          - php: '8.1'
+            laravel: '7.*'
+          - php: '8.2'
+            laravel: '7.*'
           # Exclude Laravel 10 and 11 for PHP 8.0
-          - php-version: '8.0'
-            laravel-version: '10.*'
-          - php-version: '8.0'
-            laravel-version: '11.*'
+          - php: '8.0'
+            laravel: '10.*'
+          - php: '8.0'
+            laravel: '11.*'
 
 
     name: P${{ matrix.php }} - L${{ matrix.laravel }}
@@ -51,7 +51,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php }}
+          php: ${{ matrix.php }}
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite
           coverage: none
 
