@@ -10,33 +10,33 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php-versions: ['7.2.5', '7.3', '7.4', '8.0', '8.1', '8.2']
-        laravel-versions: ['7.*', '8.*', '9.*', '10.*', '11.*']
+        php-version: ['7.2.5', '7.3', '7.4', '8.0', '8.1', '8.2']
+        laravel-version: ['7.*', '8.*', '9.*', '10.*', '11.*']
         exclude:
-          - php-versions: '7.2.5'
-            laravel-versions: '9.*'
-          - php-versions: '7.2.5'
-            laravel-versions: '10.*'
-          - php-versions: '7.4'
-            laravel-versions: '9.*'
-          - php-versions: '7.4'
-            laravel-versions: '10.*'
-          - php-versions: '7.4'
-            laravel-versions: '11.*'
-          - php-versions: '8.0'
-            laravel-versions: '7.*'
-          - php-versions: '8.0'
-            laravel-versions: '11.*'
+          - php-version: '7.2.5'
+            laravel-version: '9.*'
+          - php-version: '7.2.5'
+            laravel-version: '10.*'
+          - php-version: '7.4'
+            laravel-version: '9.*'
+          - php-version: '7.4'
+            laravel-version: '10.*'
+          - php-version: '7.4'
+            laravel-version: '11.*'
+          - php-version: '8.0'
+            laravel-version: '7.*'
+          - php-version: '8.0'
+            laravel-version: '11.*'
 
-    name: P${{ matrix.php-versions }} - L${{ matrix.laravel-versions }}
+    name: PHP ${{ matrix.php-version }} - Laravel ${{ matrix.laravel-version }}
 
     steps:
       - uses: actions/checkout@v3
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@v3
         with:
-          php-version: ${{ matrix.php-versions }}
+          php-version: ${{ matrix.php-version }}
           extensions: mbstring, dom, fileinfo
           coverage: xdebug
 
@@ -53,7 +53,7 @@ jobs:
 
       - name: Install Composer dependencies
         run: |
-          composer require "laravel/framework:${{ matrix.laravel-versions }}" --no-interaction --no-update
+          composer require "laravel/framework:${{ matrix.laravel-version }}" --no-interaction --no-update
           composer update --prefer-dist --no-interaction --no-progress
 
       - name: Show installed versions
