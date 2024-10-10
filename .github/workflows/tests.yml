@@ -13,25 +13,19 @@ jobs:
         laravel-versions: ['7.*', '8.*', '9.*', '10.*', '11.*']
         exclude:
           - php-versions: '7.4'
-            laravel-versions: '7.*'
-          - php-versions: '7.4'
-            laravel-versions: '8.*'
-          - php-versions: '7.4'
-            laravel-versions: '10.*'
-          - php-versions: '7.4'
-            laravel-versions: '11.*'
-          - php-versions: '8.0'
-            laravel-versions: '11.*'
-          - php-versions: '8.0'
-            laravel-versions: '8.*'
-          - php-versions: '8.0'
-            laravel-versions: '10.*'
-          - php-versions: '7.4'
-            laravel-versions: '8.*'
-          - php-versions: '7.4'
             laravel-versions: '9.*'
           - php-versions: '7.4'
             laravel-versions: '10.*'
+          - php-versions: '7.4'
+            laravel-versions: '11.*'
+          - php-versions: '8.0'
+            laravel-versions: '11.*'
+          - php-versions: '8.1'
+            laravel-versions: '7.*'
+          - php-versions: '8.2'
+            laravel-versions: '7.*'
+          - php-versions: '8.2'
+            laravel-versions: '8.*'
 
     name: P${{ matrix.php-versions }} - L${{ matrix.laravel-versions }}
 
@@ -59,7 +53,7 @@ jobs:
       - name: Install Composer dependencies
         run: |
           composer require "laravel/framework:${{ matrix.laravel-versions }}" --no-interaction --no-update
-          composer update --prefer-dist --no-interaction
+          composer update --prefer-dist --no-interaction --ignore-platform-reqs
 
       - name: Run test suite
         run: ./vendor/bin/pest
