@@ -5,10 +5,11 @@
   <a href="https://packagist.org/packages/jiordiviera/laravel-log-cleaner"><img src="https://img.shields.io/packagist/dt/jiordiviera/laravel-log-cleaner?style=for-the-badge" alt="Total Downloads"></a>
   <a href="https://packagist.org/packages/jiordiviera/laravel-log-cleaner"><img src="https://img.shields.io/packagist/v/jiordiviera/laravel-log-cleaner?include_prereleases&style=for-the-badge" alt="Latest Unstable Version"></a>
   <a href="https://packagist.org/packages/jiordiviera/laravel-log-cleaner"><img src="https://img.shields.io/packagist/l/jiordiviera/laravel-log-cleaner?style=for-the-badge" alt="License"></a>
-  <a href="https://github.com/jiordiviera/laravel-log-cleaner/actions/workflows/tests.yml"><img src="https://github.com/jiordiviera/laravel-log-cleaner/actions/workflows/tests.yml/badge.svg" alt="Tests Status" style="for-the-badge"/></a>
+  <a href="https://github.com/jiordiviera/laravel-log-cleaner/actions/workflows/tests.yml"><img src="https://github.com/jiordiviera/laravel-log-cleaner/actions/workflows/tests.yml/badge.svg" alt="Tests Status" style="for-the-badge" /></a>
 </p>
 
-**Laravel Log Cleaner** is a simple package that allows you to clear the content of the `laravel.log` file using an Artisan command. This package is compatible with Laravel versions 7, 8, 9, 10, and 11.
+**Laravel Log Cleaner** is a simple package that allows you to clear the content of the `laravel.log` file using an
+Artisan command. This package is compatible with Laravel versions 7, 8, 9, 10, and 11.
 
 ## Installation
 
@@ -28,7 +29,8 @@ composer require jiordiviera/laravel-log-cleaner
 
 ## Usage
 
-This package adds an Artisan command to clear the content of the `laravel.log` file. There are two ways to use this command:
+This package adds an Artisan command to clear the content of the `laravel.log` file. There are two ways to use this
+command:
 
 1. To clear all logs:
 
@@ -42,17 +44,20 @@ php artisan log:clear
 php artisan log:clear --days=30
 ```
 
-Replace `30` with the number of days you want to keep. This will remove all log entries older than the specified number of days.
+Replace `30` with the number of days you want to keep. This will remove all log entries older than the specified number
+of days.
 
 ### Examples
 
 Clear all logs:
+
 ```bash
 $ php artisan log:clear
 Log file cleared successfully.
 ```
 
 Clear logs older than 30 days:
+
 ```bash
 $ php artisan log:clear --days=30
 Logs older than 30 days have been removed.
@@ -74,7 +79,8 @@ Ensure your tests are correctly defined in the `tests/` directory.
 
 ## Contributing
 
-Contributions are welcome! Feel free to submit **Issues** or **Pull Requests** via [GitHub](https://github.com/jiordiviera/laravel-log-cleaner).
+Contributions are welcome! Feel free to submit **Issues** or **Pull Requests**
+via [GitHub](https://github.com/jiordiviera/laravel-log-cleaner).
 
 ### Development Workflow
 
@@ -100,14 +106,17 @@ If you want to contribute:
 
 ## About
 
-This package was developed to simplify log file management in Laravel projects. Instead of manually clearing the logs, you can now achieve it with a single command, with the option to selectively remove older logs.
+This package was developed to simplify log file management in Laravel projects. Instead of manually clearing the logs,
+you can now achieve it with a single command, with the option to selectively remove older logs.
 
 ## License
 
-The Laravel Log Cleaner package is open-source software licensed under the [MIT License](https://opensource.org/licenses/MIT).
+The Laravel Log Cleaner package is open-source software licensed under
+the [MIT License](https://opensource.org/licenses/MIT).
 
 ---
 
-> **Note:** Although this package was initially developed with Laravel 11, it is also compatible with earlier versions of Laravel (7, 8, 9, and 10).
+> **Note:** Although this package was initially developed with Laravel 11, it is also compatible with earlier versions
+> of Laravel (7, 8, 9, and 10).
 
 For more information, visit the [GitHub repository](https://github.com/jiordiviera/laravel-log-cleaner).
