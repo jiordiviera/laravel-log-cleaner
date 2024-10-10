@@ -13,11 +13,25 @@ jobs:
         laravel-versions: ['7.*', '8.*', '9.*', '10.*', '11.*']
         exclude:
           - php-versions: '7.4'
+            laravel-versions: '7.*'
+          - php-versions: '7.4'
+            laravel-versions: '8.*'
+          - php-versions: '7.4'
             laravel-versions: '10.*'
           - php-versions: '7.4'
             laravel-versions: '11.*'
           - php-versions: '8.0'
             laravel-versions: '11.*'
+          - php-versions: '8.0'
+            laravel-versions: '8.*'
+          - php-versions: '8.0'
+            laravel-versions: '10.*'
+          - php-versions: '7.4'
+            laravel-versions: '8.*'
+          - php-versions: '7.4'
+            laravel-versions: '9.*'
+          - php-versions: '7.4'
+            laravel-versions: '10.*'
 
     name: P${{ matrix.php-versions }} - L${{ matrix.laravel-versions }}
 
