@@ -1,7 +1,12 @@
 {
   "name": "jiordiviera/laravel-log-cleaner",
   "description": "A Laravel package to easily clean the log files.",
-  "keywords": ["laravel", "log", "cleaner", "logging"],
+  "keywords": [
+    "laravel",
+    "log",
+    "cleaner",
+    "logging"
+  ],
   "license": "MIT",
   "authors": [
     {
@@ -16,7 +21,7 @@
     "illuminate/console": "^7.0|^8.0|^9.0|^10.0|^11.0"
   },
   "require-dev": {
-    "orchestra/testbench": "^5.0",
+    "orchestra/testbench": "^5.0|^6.0|^7.0|^8.0",
     "pestphp/pest": "^1.23|^2.0",
     "pestphp/pest-plugin-laravel": "^1.4|^2.0"
   },
