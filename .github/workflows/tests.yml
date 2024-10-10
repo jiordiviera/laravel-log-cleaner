@@ -30,6 +30,8 @@ jobs:
           - php-versions: '8.0'
             laravel-versions: '7.*'
           - php-versions: '8.0'
+            laravel-versions: '10.*'
+          - php-versions: '8.0'
             laravel-versions: '11.*'
           - php-versions: '8.1'
             laravel-versions: '7.*'
