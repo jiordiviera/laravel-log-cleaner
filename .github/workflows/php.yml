@@ -1,4 +1,4 @@
-name: laravel-task-automator
+name: Laravel Log Cleaner Tests
 
 on:
   push:
@@ -7,30 +7,64 @@ on:
     branches: [ "main" ]
 
 jobs:
-  laravel-tests:
+  test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: [7.4, 8.0, 8.1, 8.2]
+        laravel: [7.*, 8.*, 9.*, 10.*]
+        exclude:
+          - php: 7.4
+            laravel: 9.*
+          - php: 7.4
+            laravel: 10.*
+          - php: 8.0
+            laravel: 7.*
+
+    name: P${{ matrix.php }} - L${{ matrix.laravel }}
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
-      - name: Set up PHP
+      - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.0'
-      - name: Check PHP Version
-        run: php -v
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite
+          coverage: none
 
-      - name: Check Composer Version
-        run: composer -V
+      - name: Install dependencies
+        run: |
+          composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update
+          composer update --prefer-dist --no-interaction --no-progress
 
-      - name: Copy .env
-        run: php -r "file_exists('.env') || copy('.env.example', '.env');"
+      - name: Create Laravel Project
+        run: |
+          composer create-project --prefer-dist laravel/laravel:${{ matrix.laravel }} test-app
+          cd test-app
+          composer require jiordiviera/laravel-log-cleaner
 
-      - name: Install Dependencies
-        run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
-      - name: Checking directory
-        run: ls -la
+      - name: Generate Log Files
+        run: |
+          cd test-app
+          php artisan tinker --execute="Log::info('Test log entry');"
+          php artisan tinker --execute="Log::error('Test error entry');"
 
-      - name: Execute Tests (Unit and Feature tests) via PHPUnit/Pest
-        run: composer test
+      - name: Run Log Cleaner
+        run: |
+          cd test-app
+          php artisan log:clear
+
+      - name: Check Log Files
+        run: |
+          cd test-app/storage/logs
+          if [ -s laravel.log ]; then
+            echo "Log file is not empty"
+            exit 1
+          else
+            echo "Log file is empty or does not exist"
+          fi
+
+      - name: Run Package Tests
+        run: vendor/bin/pest
