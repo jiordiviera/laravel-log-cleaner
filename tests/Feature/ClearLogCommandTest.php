@@ -14,7 +14,7 @@ beforeEach(function () {
 });
 
 afterEach(function () {
-//    File::delete($this->logPath);
+    File::delete($this->logPath);
 });
 
 it('clears the entire log file', function () {
@@ -42,7 +42,7 @@ it('clears logs older than specified days', function () {
 
 	$this->artisan('log:clear --days=30')
 		->expectsOutput('Logs older than 30 days have been removed')
-		->assertOk();
+		->assertSuccessful();
 
 	$newContent = File::get($this->logPath);
 	expect($newContent)->not->toContain(OLD_LOG_MESSAGE)->toContain($recentLog);
