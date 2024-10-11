@@ -40,7 +40,9 @@ it('clears logs older than specified days', function () {
 	$content = OLD_LOG_MESSAGE.PHP_EOL.$recentLog;
 	File::put($this->logPath, $content);
 
-	$this->artisan('log:clear --days=30')->expectsOutput('Logs older than 30 days have been removed')->assertOk();
+	$this->artisan('log:clear --days=30')
+		->expectsOutput('Logs older than 30 days have been removed')
+		->assertOk();
 
 	$newContent = File::get($this->logPath);
 	expect($newContent)->not->toContain(OLD_LOG_MESSAGE)->toContain($recentLog);
