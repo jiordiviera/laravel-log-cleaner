@@ -5,7 +5,12 @@
     "laravel",
     "log",
     "cleaner",
-    "logging"
+    "logging",
+    "log management",
+    "laravel package",
+    "maintenance",
+    "log files",
+    "artisan"
   ],
   "license": "MIT",
   "authors": [
