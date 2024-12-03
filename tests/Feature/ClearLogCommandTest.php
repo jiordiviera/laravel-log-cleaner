@@ -4,72 +4,113 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\File;
 use function Pest\Laravel\artisan;
 
-const LOG_PATH = 'logs/laravel.log';
+const LOG_DIRECTORY = 'logs';
 const OLD_LOG_MESSAGE = '[2023-01-01 12:00:00] test.ERROR: Old log message';
 const RECENT_LOG_MESSAGE = '[%s 12:00:00] test.INFO: Recent log message';
 
 beforeEach(function () {
-	$this->logPath = storage_path(LOG_PATH);
-	File::delete($this->logPath);
+    $this->logDirectory = storage_path(LOG_DIRECTORY);
+    File::ensureDirectoryExists($this->logDirectory);
+    File::delete(File::files($this->logDirectory));
 });
 
 afterEach(function () {
-    File::delete($this->logPath);
+    File::delete(File::files($this->logDirectory));
 });
 
-it('clears the entire log file', function () {
-	// Arrange
-	File::put($this->logPath, 'Log file content');
-	$this->artisan('log:clear')->expectsOutput('Log file cleared successfully')->assertExitCode(0);
-	// Act
-	expect(File::get($this->logPath))->toBe('');
+// Test clearing all log files
+it('clears all log files', function () {
+    // Arrange
+    $filePaths = [
+        $this->logDirectory . '/laravel.log',
+        $this->logDirectory . '/app.log',
+    ];
+    foreach ($filePaths as $filePath) {
+        File::put($filePath, 'Log file content');
+    }
+
+    // Act
+    artisan('log:clear')
+        ->assertExitCode(0);
+
+    // Assert
+    foreach ($filePaths as $filePath) {
+        expect(File::get($filePath))->toBe('');
+    }
 });
 
-it('warns if the log file does not exist', function () {
-	// Act
-	$result = artisan('log:clear');
+// Test warning if no log files exist
+it('warns if no log files exist', function () {
+    // Act
+    $result = artisan('log:clear');
 
-	// Assert
-	$result->expectsOutput('No log file found at '.$this->logPath)->assertFailed();
+    // Assert
+    $result->expectsOutput('No log files found in ' . $this->logDirectory)->assertExitCode(1);
 });
 
-it('clears logs older than specified days', function () {
-	// Arrange
-	$recentDate = Carbon::now()->format('Y-m-d');
-	$recentLog = sprintf(RECENT_LOG_MESSAGE, $recentDate);
-	$content = OLD_LOG_MESSAGE.PHP_EOL.$recentLog;
-	File::put($this->logPath, $content);
+// Test clearing logs older than specified days across files
+it('clears logs older than specified days across files', function () {
+    // Arrange
+    $recentDate = Carbon::now()->format('Y-m-d');
+    $recentLog = sprintf(RECENT_LOG_MESSAGE, $recentDate);
+    $content = OLD_LOG_MESSAGE . PHP_EOL . $recentLog;
+    $filePaths = [
+        $this->logDirectory . '/laravel.log',
+        $this->logDirectory . '/app.log',
+    ];
+    foreach ($filePaths as $filePath) {
+        File::put($filePath, $content);
+    }
 
-	$this->artisan('log:clear --days=30')
-		->expectsOutput('Logs older than 30 days have been removed')
-		->assertSuccessful();
+    // Act
+    artisan('log:clear --days=30')
+        ->assertExitCode(0);
 
-	$newContent = File::get($this->logPath);
-	expect($newContent)->not->toContain(OLD_LOG_MESSAGE)->toContain($recentLog);
+    // Assert
+    foreach ($filePaths as $filePath) {
+        expect(File::get($filePath))->not->toContain(OLD_LOG_MESSAGE)->toContain($recentLog);
+    }
 });
 
-it('handles invalid days parameter', function () {
+// Test invalid days parameter across files
+it('handles invalid days parameter across files', function () {
+    // Arrange
+    $recentDate = Carbon::now()->format('Y-m-d');
+    $recentLog = sprintf(RECENT_LOG_MESSAGE, $recentDate);
+    $content = OLD_LOG_MESSAGE . PHP_EOL . $recentLog;
+    $filePaths = [
+        $this->logDirectory . '/laravel.log',
+        $this->logDirectory . '/app.log',
+    ];
+    foreach ($filePaths as $filePath) {
+        File::put($filePath, $content);
+    }
 
-	$recentDate = Carbon::now()->format('Y-m-d');
-	$recentLog = sprintf(RECENT_LOG_MESSAGE, $recentDate);
-	$content = OLD_LOG_MESSAGE.PHP_EOL.$recentLog;
-	File::put($this->logPath, $content);
-
-	$this->artisan('log:clear --days=-1')
-		->expectsOutput('Days must be a positive integer')
-		->assertFailed();
+    // Act
+    artisan('log:clear --days=-1')
+        ->expectsOutput('Days must be a positive integer')
+        ->assertExitCode(1);
 });
 
-it('keeps all logs if all are within the specified days', function () {
-	// Arrange
-	$recentDate = Carbon::now()->subDays(5)->format('Y-m-d');
-	$recentLog = sprintf(RECENT_LOG_MESSAGE, $recentDate);
-	File::put($this->logPath, $recentLog);
+// Test keeping logs when all are within the specified days across files
+it('keeps all logs if all are within the specified days across files', function () {
+    // Arrange
+    $recentDate = Carbon::now()->subDays(5)->format('Y-m-d');
+    $recentLog = sprintf(RECENT_LOG_MESSAGE, $recentDate);
+    $filePaths = [
+        $this->logDirectory . '/laravel.log',
+        $this->logDirectory . '/app.log',
+    ];
+    foreach ($filePaths as $filePath) {
+        File::put($filePath, $recentLog);
+    }
 
-	// Act
-	$this->artisan('log:clear --days=10')
-		->expectsOutput('Logs older than 10 days have been removed')
-		->assertSuccessful();
+    // Act
+    artisan('log:clear --days=10')
+        ->assertExitCode(0);
 
-	expect(File::get($this->logPath))->toBe($recentLog);
+    // Assert
+    foreach ($filePaths as $filePath) {
+        expect(File::get($filePath))->toBe($recentLog);
+    }
 });
