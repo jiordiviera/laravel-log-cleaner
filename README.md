@@ -29,12 +29,11 @@
   <a href="https://github.com/jiordiviera/laravel-log-cleaner/actions/workflows/tests.yml"><img src="https://github.com/jiordiviera/laravel-log-cleaner/actions/workflows/tests.yml/badge.svg" alt="Tests Status" style="for-the-badge" /></a>
 </p>
 
-**Laravel Log Cleaner** is a simple package that allows you to clear the content of the `laravel.log` file using an
-Artisan command. This package is compatible with Laravel versions 7, 8, 9, 10, and 11.
+**Laravel Log Cleaner** is a utility package designed for the efficient management of Laravel log files. It allows developers to quickly clear log data using an Artisan command, enhancing application performance and management. This tool is compatible with Laravel versions 7, 8, 9, 10, and 11.
 
 ## Installation
 
-Install the package via **Composer** by running:
+You can install the package via **Composer** by executing the following command:
 
 ```bash
 composer require jiordiviera/laravel-log-cleaner
@@ -42,6 +41,7 @@ composer require jiordiviera/laravel-log-cleaner
 
 ## Compatibility
 
+This package supports the following Laravel versions:
 - Laravel 7.x
 - Laravel 8.x
 - Laravel 9.x
@@ -50,76 +50,73 @@ composer require jiordiviera/laravel-log-cleaner
 
 ## Usage
 
-This package adds an Artisan command to clear the content of the `laravel.log` file. There are two ways to use this
-command:
+After installation, an Artisan command is available to clear the Laravel log file. You can use this command in two ways:
 
-1. To clear all logs:
+1. **To clear all logs:**
 
-```bash
-php artisan log:clear
-```
+   ```bash
+   php artisan log:clear
+   ```
 
-2. To clear logs older than a specified number of days:
+2. **To clear logs older than a specific number of days:**
 
-```bash
-php artisan log:clear --days=30
-```
+   ```bash
+   php artisan log:clear --days=30
+   ```
 
-Replace `30` with the number of days you want to keep. This will remove all log entries older than the specified number
-of days.
+   Replace `30` with desired days. This will delete all log entries older than the specified days.
 
 ### Examples
 
-Clear all logs:
+- **Clear all logs:**
 
-```bash
-$ php artisan log:clear
-Log file cleared successfully.
-```
+  ```bash
+  $ php artisan log:clear
+  Log file cleared successfully.
+  ```
 
-Clear logs older than 30 days:
+- **Clear logs older than 30 days:**
 
-```bash
-$ php artisan log:clear --days=30
-Logs older than 30 days have been removed.
-```
+  ```bash
+  $ php artisan log:clear --days=30
+  Logs older than 30 days have been removed.
+  ```
 
 ## Configuration
 
-No additional configuration is required. Once the package is installed, the `log:clear` command is ready to use.
+No additional configuration is necessary. The `log:clear` command is immediately available upon package installation.
 
 ## Running Tests
 
-This package uses **Pest** for testing. To run the tests, use:
+This package uses **Pest** for testing. You can run tests with the following command:
 
 ```bash
 ./vendor/bin/pest
 ```
 
-Ensure your tests are correctly defined in the `tests/` directory.
+Ensure your tests are organized correctly within the `tests/` directory.
 
 ## Contributing
 
-Contributions are welcome! Feel free to submit **Issues** or **Pull Requests**
-via [GitHub](https://github.com/jiordiviera/laravel-log-cleaner).
+Contributions are welcomed! Feel free to submit **Issues** or **Pull Requests** on [GitHub](https://github.com/jiordiviera/laravel-log-cleaner).
 
 ### Development Workflow
 
-If you want to contribute:
+For contributors:
 
-1. Clone the repository:
+1. **Clone the repository:**
 
    ```bash
    git clone https://github.com/jiordiviera/laravel-log-cleaner.git
    ```
 
-2. Install dependencies:
+2. **Install dependencies:**
 
    ```bash
    composer install
    ```
 
-3. Run tests:
+3. **Run tests:**
 
    ```bash
    ./vendor/bin/pest
@@ -127,17 +124,14 @@ If you want to contribute:
 
 ## About
 
-This package was developed to simplify log file management in Laravel projects. Instead of manually clearing the logs,
-you can now achieve it with a single command, with the option to selectively remove older logs.
+This package was created to streamline the management of log files in Laravel applications. Instead of manually clearing the log files, you can achieve this efficiently with a single command, with the option to selectively remove older logs.
 
 ## License
 
-The Laravel Log Cleaner package is open-source software licensed under
-the [MIT License](https://opensource.org/licenses/MIT).
+The Laravel Log Cleaner is open-source software licensed under the [MIT License](https://opensource.org/licenses/MIT).
 
 ---
 
-> **Note:** Although this package was initially developed with Laravel 11, it is also compatible with earlier versions
-> of Laravel (7, 8, 9, and 10).
+> **Note:** Initially developed for Laravel 11, this package remains compatible with earlier versions (7, 8, 9, 10).
 
-For more information, visit the [GitHub repository](https://github.com/jiordiviera/laravel-log-cleaner).
+For further information, visit the [GitHub repository](https://github.com/jiordiviera/laravel-log-cleaner).
