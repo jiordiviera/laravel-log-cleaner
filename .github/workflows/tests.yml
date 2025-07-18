@@ -15,6 +15,9 @@ jobs:
         php: [ '8.1', '8.2', '8.3' ]
         laravel: [ '9.*', '10.*', '11.*', '12.*' ]
         exclude:
+          # Laravel 11 requires PHP 8.2+
+          - php: '8.1'
+            laravel: '11.*'
           # Laravel 12 requires PHP 8.2+
           - php: '8.1'
             laravel: '12.*'
