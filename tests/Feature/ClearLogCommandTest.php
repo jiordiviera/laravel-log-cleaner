@@ -114,3 +114,101 @@ it('keeps all logs if all are within the specified days across files', function 
         expect(File::get($filePath))->toBe($recentLog);
     }
 });
+
+// Test backup creation
+it('creates backup when backup option is used', function () {
+    // Arrange
+    $filePath = $this->logDirectory . '/laravel.log';
+    $content = 'Test log content';
+    File::put($filePath, $content);
+
+    // Act
+    artisan('log:clear --backup')
+        ->assertExitCode(0);
+
+    // Assert
+    $backupFiles = glob($filePath . '.backup.*');
+    expect($backupFiles)->toHaveCount(1);
+    expect(File::get($backupFiles[0]))->toBe($content);
+});
+
+// Test dry run mode
+it('shows what would be removed in dry run mode', function () {
+    // Arrange
+    $recentDate = Carbon::now()->format('Y-m-d');
+    $recentLog = sprintf(RECENT_LOG_MESSAGE, $recentDate);
+    $content = OLD_LOG_MESSAGE . PHP_EOL . $recentLog;
+    $filePath = $this->logDirectory . '/laravel.log';
+    File::put($filePath, $content);
+
+    // Act & Assert
+    artisan('log:clear --days=30 --dry-run')
+        ->expectsOutput('[DRY RUN] Would remove 1 lines from laravel.log')
+        ->assertExitCode(0);
+
+    // Verify file is unchanged
+    expect(File::get($filePath))->toBe($content);
+});
+
+// Test memory efficient processing
+it('processes large files with memory efficient mode', function () {
+    // Arrange
+    $recentDate = Carbon::now()->format('Y-m-d');
+    $recentLog = sprintf(RECENT_LOG_MESSAGE, $recentDate);
+    $content = OLD_LOG_MESSAGE . PHP_EOL . $recentLog;
+    $filePath = $this->logDirectory . '/laravel.log';
+    File::put($filePath, $content);
+
+    // Act
+    artisan('log:clear --days=30 --memory-efficient')
+        ->assertExitCode(0);
+
+    // Assert
+    expect(File::get($filePath))->not->toContain(OLD_LOG_MESSAGE)->toContain($recentLog);
+});
+
+// Test custom pattern support
+it('supports custom date patterns', function () {
+    // Arrange
+    $customLog = '2023-01-01 Custom log entry';
+    $recentLog = Carbon::now()->format('Y-m-d') . ' Recent custom log';
+    $content = $customLog . PHP_EOL . $recentLog;
+    $filePath = $this->logDirectory . '/laravel.log';
+    File::put($filePath, $content);
+
+    // Act
+    artisan('log:clear', ['--days' => 30, '--pattern' => '/^(\d{4}-\d{2}-\d{2})/'])
+        ->assertExitCode(0);
+
+    // Assert
+    expect(File::get($filePath))->not->toContain($customLog)->toContain($recentLog);
+});
+
+// Test log level filtering
+it('filters logs by level', function () {
+    // Arrange
+    $errorLog = '[' . Carbon::now()->format('Y-m-d') . ' 12:00:00] test.ERROR: Error message';
+    $infoLog = '[' . Carbon::now()->format('Y-m-d') . ' 12:00:00] test.INFO: Info message';
+    $content = $errorLog . PHP_EOL . $infoLog;
+    $filePath = $this->logDirectory . '/laravel.log';
+    File::put($filePath, $content);
+
+    // Act - keep only ERROR logs
+    artisan('log:clear --days=0 --level=ERROR')
+        ->assertExitCode(0);
+
+    // Assert
+    expect(File::get($filePath))->toContain($errorLog)->not->toContain($infoLog);
+});
+
+// Test invalid log level
+it('rejects invalid log levels', function () {
+    // Arrange
+    $filePath = $this->logDirectory . '/laravel.log';
+    File::put($filePath, 'test content');
+
+    // Act & Assert
+    artisan('log:clear --level=INVALID')
+        ->expectsOutput('Invalid log level. Must be one of: EMERGENCY, ALERT, CRITICAL, ERROR, WARNING, NOTICE, INFO, DEBUG')
+        ->assertExitCode(1);
+});
