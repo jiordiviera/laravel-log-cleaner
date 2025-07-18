@@ -60,7 +60,7 @@ class ClearLogCommand extends Command
                     $this->createBackup($logFile);
                 }
 
-                if ($days === 0) {
+                if ($days === 0 && !$this->option('level')) {
                     $this->clearAllLogs($logFile);
                 } else {
                     $this->clearOldLogs($logFile, $days);
@@ -129,6 +129,11 @@ class ClearLogCommand extends Command
         // First check log level filter
         if (!$this->shouldKeepLineByLevel($line)) {
             return false;
+        }
+
+        // If only filtering by level (days=0 and level specified), keep the line
+        if ($this->option('level') && $this->validateDaysOption() === 0) {
+            return true;
         }
 
         // Then check date filter
@@ -295,12 +300,14 @@ class ClearLogCommand extends Command
             return true;
         }
 
+        // Check if line has a log level
         foreach (self::LOG_LEVELS as $level) {
             if (preg_match('/\.' . $level . ':/', $line)) {
                 return strtoupper($filterLevel) === $level;
             }
         }
         
+        // If no log level found in line, keep it (might be multiline log continuation)
         return true;
     }
 

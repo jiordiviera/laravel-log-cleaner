@@ -177,7 +177,7 @@ it('supports custom date patterns', function () {
     File::put($filePath, $content);
 
     // Act
-    artisan('log:clear --days=30 --pattern="/^(\d{4}-\d{2}-\d{2})/"')
+    artisan('log:clear', ['--days' => 30, '--pattern' => '/^(\d{4}-\d{2}-\d{2})/'])
         ->assertExitCode(0);
 
     // Assert
