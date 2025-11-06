@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] - 2025-01-06
+
 ### Added
 - Display estimated disk space to be freed in dry-run mode
 - Validation for zlib extension before compression operations
@@ -25,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved handling of empty log files and files with only whitespace
 - Better management of backup/compress file naming conflicts
 
-## [2.0.0] - 2025-01-18
+## [2.0.0] - 2024-07-18
 
 ### Added
 - **Dry-run mode** (`--dry-run`): Preview changes without modifying files

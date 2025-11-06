@@ -2,13 +2,17 @@
 
 ## Supported Versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.x     | :white_check_mark: |
+We actively support the following versions with security updates:
+
+| Version | Supported          | Support Until  | Notes                    |
+| ------- | ------------------ | -------------- | ------------------------ |
+| 2.0.x   | :white_check_mark: | Active         | Current stable release   |
+| 1.0.x   | :warning:          | 2026-01-01     | Security fixes only      |
+| < 1.0   | :x:                | End of life    | No longer supported      |
 
 ## Reporting a Vulnerability
 
-We take the security of Laravel Log Cleaner seriously. If you discover any security-related issues, please send an email to security@jiordiviera.dev instead of using the public issue tracker.
+We take the security of Laravel Log Cleaner seriously. If you discover any security-related issues, please send an email to <hello@jiordiviera.me> instead of using the public issue tracker.
 
 Please include the following information in your report:
 
