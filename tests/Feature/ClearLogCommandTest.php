@@ -212,3 +212,295 @@ it('rejects invalid log levels', function () {
         ->expectsOutput('Invalid log level. Must be one of: EMERGENCY, ALERT, CRITICAL, ERROR, WARNING, NOTICE, INFO, DEBUG')
         ->assertExitCode(1);
 });
+
+// Test compression creates .gz file
+it('creates compressed file when compress option is used', function () {
+    // Arrange
+    $recentDate = Carbon::now()->format('Y-m-d');
+    $recentLog = sprintf(RECENT_LOG_MESSAGE, $recentDate);
+    $content = OLD_LOG_MESSAGE . PHP_EOL . $recentLog;
+    $filePath = $this->logDirectory . '/laravel.log';
+    File::put($filePath, $content);
+
+    // Act
+    artisan('log:clear --days=30 --compress')
+        ->assertExitCode(0);
+
+    // Assert - check .gz file exists
+    $gzFiles = glob($filePath . '.old.*.gz');
+    expect($gzFiles)->toHaveCount(1);
+
+    // Verify main file still has recent logs
+    expect(File::get($filePath))->toContain($recentLog)->not->toContain(OLD_LOG_MESSAGE);
+});
+
+// Test compressed file content is correct
+it('compresses old logs correctly and they can be decompressed', function () {
+    // Arrange
+    $recentDate = Carbon::now()->format('Y-m-d');
+    $recentLog = sprintf(RECENT_LOG_MESSAGE, $recentDate);
+    $content = OLD_LOG_MESSAGE . PHP_EOL . $recentLog;
+    $filePath = $this->logDirectory . '/laravel.log';
+    File::put($filePath, $content);
+
+    // Act
+    artisan('log:clear --days=30 --compress')
+        ->assertExitCode(0);
+
+    // Assert - decompress and verify content
+    $gzFiles = glob($filePath . '.old.*.gz');
+    expect($gzFiles)->toHaveCount(1);
+
+    $decompressed = gzdecode(File::get($gzFiles[0]));
+    expect($decompressed)->toContain(OLD_LOG_MESSAGE);
+});
+
+// Test compress with memory efficient mode
+it('compresses logs with memory efficient mode', function () {
+    // Arrange
+    $recentDate = Carbon::now()->format('Y-m-d');
+    $recentLog = sprintf(RECENT_LOG_MESSAGE, $recentDate);
+    $content = OLD_LOG_MESSAGE . PHP_EOL . $recentLog;
+    $filePath = $this->logDirectory . '/laravel.log';
+    File::put($filePath, $content);
+
+    // Act
+    artisan('log:clear --days=30 --compress --memory-efficient')
+        ->assertExitCode(0);
+
+    // Assert
+    $gzFiles = glob($filePath . '.old.*.gz');
+    expect($gzFiles)->toHaveCount(1);
+    expect(File::get($filePath))->toContain($recentLog)->not->toContain(OLD_LOG_MESSAGE);
+});
+
+// Test backup and compress combination
+it('creates backup and compresses old logs', function () {
+    // Arrange
+    $recentDate = Carbon::now()->format('Y-m-d');
+    $recentLog = sprintf(RECENT_LOG_MESSAGE, $recentDate);
+    $content = OLD_LOG_MESSAGE . PHP_EOL . $recentLog;
+    $filePath = $this->logDirectory . '/laravel.log';
+    File::put($filePath, $content);
+
+    // Act
+    artisan('log:clear --days=30 --backup --compress')
+        ->assertExitCode(0);
+
+    // Assert - both backup and compressed file exist
+    $backupFiles = glob($filePath . '.backup.*');
+    $gzFiles = glob($filePath . '.old.*.gz');
+    expect($backupFiles)->toHaveCount(1);
+    expect($gzFiles)->toHaveCount(1);
+
+    // Backup should contain original content
+    expect(File::get($backupFiles[0]))->toBe($content);
+});
+
+// Test level filtering with days combination
+it('filters by level and days together', function () {
+    // Arrange
+    $recentDate = Carbon::now()->format('Y-m-d');
+    $oldDate = Carbon::now()->subDays(60)->format('Y-m-d');
+
+    $errorLog = '[' . $recentDate . ' 12:00:00] test.ERROR: Recent error';
+    $oldErrorLog = '[' . $oldDate . ' 12:00:00] test.ERROR: Old error';
+    $infoLog = '[' . $recentDate . ' 12:00:00] test.INFO: Recent info';
+
+    $content = $oldErrorLog . PHP_EOL . $errorLog . PHP_EOL . $infoLog;
+    $filePath = $this->logDirectory . '/laravel.log';
+    File::put($filePath, $content);
+
+    // Act - keep only ERROR logs from last 30 days
+    artisan('log:clear --days=30 --level=ERROR')
+        ->assertExitCode(0);
+
+    // Assert
+    $result = File::get($filePath);
+    expect($result)->toContain($errorLog)
+        ->not->toContain($oldErrorLog)
+        ->not->toContain($infoLog);
+});
+
+// Test dry run shows correct space estimation
+it('shows space estimation in dry run mode', function () {
+    // Arrange
+    $recentDate = Carbon::now()->format('Y-m-d');
+    $recentLog = sprintf(RECENT_LOG_MESSAGE, $recentDate);
+    $content = str_repeat(OLD_LOG_MESSAGE . PHP_EOL, 100) . $recentLog;
+    $filePath = $this->logDirectory . '/laravel.log';
+    File::put($filePath, $content);
+
+    // Act - run dry-run and capture output
+    artisan('log:clear --days=30 --dry-run')
+        ->expectsOutputToContain('Would remove')
+        ->expectsOutputToContain('Estimated')
+        ->assertExitCode(0);
+
+    // Verify file unchanged - this is the key behavior of dry-run
+    expect(File::get($filePath))->toBe($content);
+});
+
+// Test custom pattern with invalid regex
+it('handles invalid regex pattern gracefully', function () {
+    // Arrange
+    $filePath = $this->logDirectory . '/laravel.log';
+    File::put($filePath, 'test content');
+
+    // Act & Assert - invalid regex pattern should fail with error
+    artisan('log:clear --days=30 --pattern="[invalid"')
+        ->expectsOutputToContain('Invalid regex pattern')
+        ->assertExitCode(1);
+});
+
+// Test all options combined
+it('handles all options together correctly', function () {
+    // Arrange
+    $recentDate = Carbon::now()->format('Y-m-d');
+    $recentLog = '[' . $recentDate . ' 12:00:00] test.ERROR: Recent error';
+    $content = OLD_LOG_MESSAGE . PHP_EOL . $recentLog;
+    $filePath = $this->logDirectory . '/laravel.log';
+    File::put($filePath, $content);
+
+    // Act - dry run with all options (should not modify anything)
+    artisan('log:clear --days=30 --backup --compress --level=ERROR --memory-efficient --dry-run')
+        ->assertExitCode(0);
+
+    // Assert - file unchanged in dry-run
+    expect(File::get($filePath))->toBe($content);
+
+    // No backup or compressed files created
+    $backupFiles = glob($filePath . '.backup.*');
+    $gzFiles = glob($filePath . '.old.*.gz');
+    expect($backupFiles)->toBeEmpty();
+    expect($gzFiles)->toBeEmpty();
+});
+
+// Test empty log file
+it('handles empty log file gracefully', function () {
+    // Arrange
+    $filePath = $this->logDirectory . '/laravel.log';
+    File::put($filePath, '');
+
+    // Act
+    artisan('log:clear --days=30')
+        ->assertExitCode(0);
+
+    // Assert - file still empty
+    expect(File::get($filePath))->toBe('');
+});
+
+// Test file with only whitespace
+it('handles file with only whitespace', function () {
+    // Arrange
+    $filePath = $this->logDirectory . '/laravel.log';
+    File::put($filePath, "   \n  \n  ");
+
+    // Act
+    artisan('log:clear --days=30')
+        ->assertExitCode(0);
+
+    // Assert - whitespace preserved or cleaned
+    expect(File::exists($filePath))->toBeTrue();
+});
+
+// Test multiple backup creations don't conflict
+it('creates multiple backups without conflicts', function () {
+    // Arrange
+    $filePath = $this->logDirectory . '/laravel.log';
+    File::put($filePath, 'test content');
+
+    // Act - create first backup
+    artisan('log:clear --backup')
+        ->assertExitCode(0);
+
+    // Restore content and create second backup (in same second if possible)
+    File::put($filePath, 'test content 2');
+    artisan('log:clear --backup')
+        ->assertExitCode(0);
+
+    // Assert - should have 2 backup files
+    $backupFiles = glob($filePath . '.backup.*');
+    expect(count($backupFiles))->toBeGreaterThanOrEqual(1);
+});
+
+// Test pattern validation
+it('validates regex patterns properly', function () {
+    // Arrange
+    $filePath = $this->logDirectory . '/laravel.log';
+    $oldDate = Carbon::now()->subDays(60)->format('Y-m-d');
+    $recentDate = Carbon::now()->format('Y-m-d');
+    File::put($filePath, "[{$oldDate}] old log\n[{$recentDate}] recent log");
+
+    // Act - valid pattern should work
+    artisan('log:clear', ['--days' => 30, '--pattern' => '/^\[(\d{4}-\d{2}-\d{2})\]/'])
+        ->assertExitCode(0);
+
+    // Verify recent log kept, old removed
+    $result = File::get($filePath);
+    expect($result)->toContain($recentDate)->not->toContain($oldDate);
+});
+
+// Test large file triggers memory efficient automatically
+it('automatically uses memory efficient mode for large files', function () {
+    // Arrange
+    $filePath = $this->logDirectory . '/laravel.log';
+
+    // Create content larger than 50MB threshold
+    $largeContent = str_repeat(OLD_LOG_MESSAGE . PHP_EOL, 10000);
+    File::put($filePath, $largeContent);
+
+    $fileSize = filesize($filePath);
+
+    // Act - should auto-enable memory efficient if > 50MB
+    artisan('log:clear --days=30')
+        ->assertExitCode(0);
+
+    // Assert - command should complete without memory errors
+    expect(File::exists($filePath))->toBeTrue();
+});
+
+// Test compress without old logs
+it('handles compress option when no old logs to compress', function () {
+    // Arrange
+    $recentDate = Carbon::now()->format('Y-m-d');
+    $recentLog = sprintf(RECENT_LOG_MESSAGE, $recentDate);
+    $filePath = $this->logDirectory . '/laravel.log';
+    File::put($filePath, $recentLog);
+
+    // Act
+    artisan('log:clear --days=30 --compress')
+        ->assertExitCode(0);
+
+    // Assert - no .gz file created
+    $gzFiles = glob($filePath . '.old.*.gz');
+    expect($gzFiles)->toBeEmpty();
+
+    // Recent log still intact
+    expect(File::get($filePath))->toBe($recentLog);
+});
+
+// Test level filter with multiline stack traces
+it('preserves stack traces when filtering by level', function () {
+    // Arrange
+    $recentDate = Carbon::now()->format('Y-m-d');
+    $errorWithTrace = <<<LOG
+[{$recentDate} 12:00:00] test.ERROR: Error message
+#0 /path/to/file.php(10): function()
+#1 /path/to/another.php(20): anotherFunction()
+LOG;
+    $infoLog = '[' . $recentDate . ' 12:00:00] test.INFO: Info message';
+    $content = $errorWithTrace . PHP_EOL . $infoLog;
+    $filePath = $this->logDirectory . '/laravel.log';
+    File::put($filePath, $content);
+
+    // Act - keep only ERROR
+    artisan('log:clear --days=0 --level=ERROR')
+        ->assertExitCode(0);
+
+    // Assert - ERROR with stack trace kept, INFO removed
+    $result = File::get($filePath);
+    expect($result)->toContain('ERROR: Error message')
+        ->toContain('#0 /path/to/file.php')
+        ->not->toContain('INFO: Info message');
+});

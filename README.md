@@ -143,6 +143,7 @@ php artisan log:clear --days=30 --backup --compress --level=ERROR --dry-run
   ```bash
   $ php artisan log:clear --days=30 --dry-run
   [DRY RUN] Would remove 150 lines from laravel.log
+  [DRY RUN] Estimated space to free: 45.2 MB
   ```
 
 - **Create backup and compress:**

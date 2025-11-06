@@ -23,6 +23,8 @@ class ClearLogCommand extends Command
     const MESSAGE_BACKUP_CREATED = 'Backup created: %s';
     const MESSAGE_COMPRESSED = 'Logs compressed to: %s';
     const MESSAGE_DRY_RUN = '[DRY RUN] Would remove %d lines from %s';
+    const MESSAGE_DRY_RUN_SPACE = '[DRY RUN] Estimated space to free: %s';
+    const MESSAGE_ZLIB_MISSING = 'The zlib extension is required for compression. Please install it to use the --compress option.';
     const MEMORY_THRESHOLD = 50 * 1024 * 1024; // 50MB
     const LOG_LEVELS = ['EMERGENCY', 'ALERT', 'CRITICAL', 'ERROR', 'WARNING', 'NOTICE', 'INFO', 'DEBUG'];
     const DEFAULT_LOG_PATTERNS = [
@@ -43,6 +45,7 @@ class ClearLogCommand extends Command
             $days = $this->validateDaysOption();
             $this->compilePatterns();
             $this->validateLogLevel();
+            $this->validateZlibExtension();
 
             $logFiles = $this->getLogFiles($logDir);
 
@@ -107,14 +110,16 @@ class ClearLogCommand extends Command
     {
         $cutoffDate = Carbon::now()->subDays($days)->startOfDay();
         $filePath = $file->getPathname();
-        
+
         if ($this->shouldUseMemoryEfficientProcessing($filePath)) {
             $this->clearOldLogsMemoryEfficient($filePath, $cutoffDate, $days);
         } else {
             $this->clearOldLogsStandard($filePath, $cutoffDate, $days);
         }
-        
-        $this->info(sprintf(self::MESSAGE_CLEARED_OLD, $days, $file->getFilename()));
+
+        if (!$this->option('dry-run')) {
+            $this->info(sprintf(self::MESSAGE_CLEARED_OLD, $days, $file->getFilename()));
+        }
     }
 
     private function filterOldLogs(array $lines, Carbon $cutoffDate): array
@@ -153,8 +158,12 @@ class ClearLogCommand extends Command
     private function compilePatterns(): void
     {
         $customPattern = $this->option('pattern');
-        
+
         if ($customPattern) {
+            // Validate regex pattern
+            if (@preg_match($customPattern, '') === false) {
+                throw new InvalidArgumentException('Invalid regex pattern provided: ' . preg_last_error_msg());
+            }
             $this->compiledPatterns = [$customPattern => 'Y-m-d'];
         } else {
             $this->compiledPatterns = [
@@ -175,10 +184,15 @@ class ClearLogCommand extends Command
         $content = File::get($filePath);
         $lines = explode(PHP_EOL, $content);
         $newLines = $this->filterOldLogs($lines, $cutoffDate);
-        
+
         if ($this->option('dry-run')) {
             $removedCount = count($lines) - count($newLines);
             $this->info(sprintf(self::MESSAGE_DRY_RUN, $removedCount, basename($filePath)));
+
+            // Calculate estimated space to free
+            $linesToRemove = array_diff($lines, $newLines);
+            $estimatedBytes = array_sum(array_map('strlen', $linesToRemove));
+            $this->info(sprintf(self::MESSAGE_DRY_RUN_SPACE, $this->formatBytes($estimatedBytes)));
             return;
         }
 
@@ -248,18 +262,32 @@ class ClearLogCommand extends Command
         if (!$inputHandle) {
             throw new RuntimeException('Unable to open file for dry run analysis');
         }
-        
+
         $removedCount = 0;
-        
+        $estimatedBytes = 0;
+
         while (($line = fgets($inputHandle)) !== false) {
             $line = rtrim($line, "\r\n");
             if (!$this->shouldKeepLine($line, $cutoffDate)) {
                 $removedCount++;
+                $estimatedBytes += strlen($line);
             }
         }
-        
+
         fclose($inputHandle);
         $this->info(sprintf(self::MESSAGE_DRY_RUN, $removedCount, basename($filePath)));
+        $this->info(sprintf(self::MESSAGE_DRY_RUN_SPACE, $this->formatBytes($estimatedBytes)));
+    }
+
+    private function formatBytes(int $bytes): string
+    {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $bytes = max($bytes, 0);
+        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+        $pow = min($pow, count($units) - 1);
+        $bytes /= (1 << (10 * $pow));
+
+        return round($bytes, 2) . ' ' . $units[$pow];
     }
 
     private function validatePermissions(array $logFiles): void
@@ -290,6 +318,13 @@ class ClearLogCommand extends Command
         $level = $this->option('level');
         if ($level && !in_array(strtoupper($level), self::LOG_LEVELS)) {
             throw new InvalidArgumentException('Invalid log level. Must be one of: ' . implode(', ', self::LOG_LEVELS));
+        }
+    }
+
+    private function validateZlibExtension(): void
+    {
+        if ($this->option('compress') && !extension_loaded('zlib')) {
+            throw new RuntimeException(self::MESSAGE_ZLIB_MISSING);
         }
     }
 
