@@ -1,6 +1,7 @@
 {
   "name": "jiordiviera/laravel-log-cleaner",
   "description": "A Laravel package to easily clean the log files.",
+  "version": "2.1.0",
   "keywords": [
     "laravel",
     "log",
@@ -49,7 +50,10 @@
     "laravel": {
       "providers": [
         "JiordiViera\\LaravelLogCleaner\\LaravelLogCleanerServiceProvider"
-      ]
+      ],
+      "aliases": {
+        "LogCleaner": "JiordiViera\\LaravelLogCleaner\\LogCleanerFacade"
+      }
     }
   },
   "minimum-stability": "dev",

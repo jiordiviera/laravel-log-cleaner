@@ -10,6 +10,10 @@ class LaravelLogCleanerServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->singleton('log-cleaner', function ($app) {
+            return new LogCleaner();
+        });
+
         $this->commands([
             ClearLogCommand::class
         ]);

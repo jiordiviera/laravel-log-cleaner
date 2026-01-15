@@ -96,6 +96,9 @@ php artisan log:clear --days=0 --level=ERROR
 
 # Clean with custom date pattern
 php artisan log:clear --days=30 --pattern="/^(\d{4}-\d{2}-\d{2})/"
+
+# Clean only specific log file
+php artisan log:clear --days=30 --file=laravel.log
 ```
 
 #### 📦 Compression & Memory
@@ -113,6 +116,40 @@ php artisan log:clear --days=30 --memory-efficient
 php artisan log:clear --days=30 --backup --compress --level=ERROR --dry-run
 ```
 
+### Programmatic Usage with Facade
+
+You can also use the `LogCleaner` facade to clear logs programmatically in your code:
+
+```php
+use JiordiViera\LaravelLogCleaner\LogCleanerFacade as LogCleaner;
+
+// Clear all logs
+LogCleaner::clearAll();
+
+// Clear logs older than 30 days
+LogCleaner::clearOld(30);
+
+// Clear with backup
+LogCleaner::clearWithBackup(30);
+
+// Clear with compression
+LogCleaner::clearWithCompression(30);
+
+// Clear only specific file
+LogCleaner::clearOld(30, 'laravel.log');
+
+// Advanced usage with all options
+LogCleaner::clear(
+    days: 30,
+    backup: true,
+    compress: true,
+    level: 'ERROR',
+    pattern: '/^(\d{4}-\d{2}-\d{2})/',
+    memoryEfficient: true,
+    file: 'laravel.log'
+);
+```
+
 ### Available Options
 
 | Option | Description | Example |
@@ -124,6 +161,7 @@ php artisan log:clear --days=30 --backup --compress --level=ERROR --dry-run
 | `--pattern=REGEX` | Custom date pattern matching | `--pattern="/^(\d{4}-\d{2}-\d{2})/"` |
 | `--compress` | Compress old logs instead of deleting | `--compress` |
 | `--memory-efficient` | Force memory-efficient processing | `--memory-efficient` |
+| `--file=FILENAME` | Clean only specific log file | `--file=laravel.log` |
 
 ### Examples
 

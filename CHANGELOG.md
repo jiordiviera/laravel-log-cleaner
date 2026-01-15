@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-01-15
+
+### Added
+- **LogCleanerFacade**: New facade for programmatic access to log cleaning functionality
+- **File-specific cleaning** (`--file=FILENAME`): Clean specific log files instead of all logs
+- **Programmatic API**: Use `LogCleaner::clear()` directly in code for custom integrations
+
+### Improved
+- **Code refactoring**: Eliminated code duplication between `ClearLogCommand` and `LogCleaner` class
+- **Better architecture**: Command now delegates to shared `LogCleaner` logic for consistency
+- **Enhanced test coverage**: Added comprehensive tests for the new facade functionality
+
+### Changed
+- **ClearLogCommand refactoring**: Command now uses `LogCleaner` class internally, reducing maintenance overhead
+- **Facade registration**: Added `LogCleaner` alias in composer.json for easy access
+
+### Fixed
+- Minor improvements in error handling and code organization
+
 ## [2.0.1] - 2025-01-06
 
 ### Added
