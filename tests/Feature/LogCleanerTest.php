@@ -9,10 +9,13 @@ use Illuminate\Support\Facades\Event;
 use JiordiViera\LaravelLogCleaner\Events\LogCleaned;
 use JiordiViera\LaravelLogCleaner\Events\LogCleaning;
 use JiordiViera\LaravelLogCleaner\Events\LogFileCleaned;
+use JiordiViera\LaravelLogCleaner\Exceptions\DiskSpaceException;
+use JiordiViera\LaravelLogCleaner\Exceptions\FileLockException;
 use JiordiViera\LaravelLogCleaner\Exceptions\InvalidDaysException;
 use JiordiViera\LaravelLogCleaner\Exceptions\InvalidLogLevelException;
 use JiordiViera\LaravelLogCleaner\Exceptions\InvalidPatternException;
 use JiordiViera\LaravelLogCleaner\Exceptions\NoLogFilesException;
+use JiordiViera\LaravelLogCleaner\Exceptions\PermissionException;
 use JiordiViera\LaravelLogCleaner\LogCleaner;
 use JiordiViera\LaravelLogCleaner\Tests\CreatesLogFiles;
 
@@ -402,7 +405,7 @@ describe('LogCleaner - Exception Coverage', function () {
         $logCleaner = new LogCleaner;
 
         expect(fn () => $logCleaner->clearAll())
-            ->toThrow(\JiordiViera\LaravelLogCleaner\Exceptions\PermissionException::class);
+            ->toThrow(PermissionException::class);
 
         chmod($logPath, 0644);
     });
@@ -427,12 +430,12 @@ describe('LogCleaner - Exception Coverage', function () {
         $this->createTestLogFile('laravel.log', str_repeat("Test line\n", 100));
 
         // Set very high minimum space requirement to trigger exception
-        \Illuminate\Support\Facades\Config::set('log-cleaner.min_free_disk_space_mb', 999999);
+        Config::set('log-cleaner.min_free_disk_space_mb', 999999);
 
         $logCleaner = new LogCleaner;
 
         expect(fn () => $logCleaner->clear(backup: true))
-            ->toThrow(\JiordiViera\LaravelLogCleaner\Exceptions\DiskSpaceException::class);
+            ->toThrow(DiskSpaceException::class);
     });
 
     it('throws FileLockException when file is locked', function () {
@@ -442,14 +445,14 @@ describe('LogCleaner - Exception Coverage', function () {
         $lockFile = storage_path('logs/laravel.log.lock');
         file_put_contents($lockFile, '99999');
 
-        \Illuminate\Support\Facades\Config::set('log-cleaner.locking.timeout', 1);
-        \Illuminate\Support\Facades\Config::set('log-cleaner.locking.enabled', true);
+        Config::set('log-cleaner.locking.timeout', 1);
+        Config::set('log-cleaner.locking.enabled', true);
 
         $logCleaner = new LogCleaner;
 
         $start = microtime(true);
         expect(fn () => $logCleaner->clearAll())
-            ->toThrow(\JiordiViera\LaravelLogCleaner\Exceptions\FileLockException::class);
+            ->toThrow(FileLockException::class);
         $end = microtime(true);
 
         // Verify it actually waited for the timeout (approximately)
