@@ -1,3 +1,5 @@
 <?php
 
-uses(\JiordiViera\LaravelLogCleaner\Tests\TestCase::class)->in(__DIR__);
+use JiordiViera\LaravelLogCleaner\Tests\TestCase;
+
+uses(TestCase::class)->in(__DIR__);
