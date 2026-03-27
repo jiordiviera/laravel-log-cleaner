@@ -1,79 +1,49 @@
 <?php
 
 use JiordiViera\LaravelLogCleaner\LogCleanerFacade as LogCleaner;
-use JiordiViera\LaravelLogCleaner\Tests\CreatesLogFiles;
+use Illuminate\Support\Facades\Storage;
 
-uses(CreatesLogFiles::class);
+test('facade can clear all logs', function () {
+    // Create a test log file
+    $logPath = storage_path('logs/laravel.log');
+    $testContent = "Test log entry\nAnother log entry\n";
+    file_put_contents($logPath, $testContent);
 
-describe('LogCleaner Facade', function () {
-    beforeEach(function () {
-        $this->cleanupLogFiles();
-    });
+    // Use facade to clear all logs
+    LogCleaner::clearAll();
 
-    afterEach(function () {
-        $this->cleanupLogFiles();
-    });
+    // Assert log file is empty
+    expect(file_get_contents($logPath))->toBe('');
+});
 
-    test('facade can clear all logs', function () {
-        $this->createTestLogFile('laravel.log', "Test log entry\nAnother log entry\n");
+test('facade can clear old logs', function () {
+    // Create a test log file with old and new entries
+    $logPath = storage_path('logs/laravel.log');
+    $oldDate = now()->subDays(10)->format('Y-m-d');
+    $newDate = now()->format('Y-m-d');
+    $testContent = "[{$oldDate}] Old log entry\n[{$newDate}] New log entry\n";
+    file_put_contents($logPath, $testContent);
 
-        LogCleaner::clearAll();
+    // Use facade to clear logs older than 5 days
+    LogCleaner::clearOld(5);
 
-        $this->assertLogFileIsEmpty();
-    });
+    // Assert only new log remains
+    $remainingContent = file_get_contents($logPath);
+    expect($remainingContent)->toContain("[{$newDate}] New log entry");
+    expect($remainingContent)->not->toContain("[{$oldDate}] Old log entry");
+});
 
-    test('facade can clear old logs', function () {
-        $entries = $this->createMixedAgeLogEntries(10, 3, 3);
-        $this->createLogFileWithEntries($entries);
+test('facade can clear specific log file', function () {
+    // Create multiple log files
+    $laravelLog = storage_path('logs/laravel.log');
+    $otherLog = storage_path('logs/other.log');
+    file_put_contents($laravelLog, "Laravel log content\n");
+    file_put_contents($otherLog, "Other log content\n");
 
-        LogCleaner::clearOld(5);
+    // Clear only laravel.log
+    LogCleaner::clearAll('laravel.log');
 
-        $this->assertLogFileDoesNotContain('Old log entry');
-        $this->assertLogFileContains('New log entry');
-    });
-
-    test('facade can clear specific log file', function () {
-        $this->createMultipleLogFiles(['laravel.log', 'other.log']);
-        $this->createTestLogFile('other.log', "Other log content\n");
-
-        LogCleaner::clearAll('laravel.log');
-
-        $this->assertLogFileIsEmpty('laravel.log');
-        $this->assertLogFileContains('Other log content', 'other.log');
-    });
-
-    test('facade can clear with backup', function () {
-        $this->createTestLogFile('laravel.log', "Test log entry\n");
-
-        LogCleaner::clearWithBackup();
-
-        expect(glob(storage_path('logs/laravel.log.backup.*')))->not->toBeEmpty();
-    });
-
-    test('facade can clear with compression', function () {
-        $entries = $this->createOldLogEntries(10, 5);
-        $this->createLogFileWithEntries($entries);
-
-        LogCleaner::clearWithCompression(5);
-
-        expect(glob(storage_path('logs/laravel.log.old.*.gz')))->not->toBeEmpty();
-    });
-
-    test('facade clear method with all options', function () {
-        $entries = $this->createMixedAgeLogEntries(10, 5, 5);
-        $this->createLogFileWithEntries($entries);
-
-        LogCleaner::clear(
-            days: 5,
-            backup: true,
-            compress: false,
-            level: null,
-            pattern: null,
-            memoryEfficient: false
-        );
-
-        $this->assertLogFileDoesNotContain('Old log entry');
-        $this->assertLogFileContains('New log entry');
-        expect(glob(storage_path('logs/laravel.log.backup.*')))->not->toBeEmpty();
-    });
+    // Assert laravel.log is empty, other.log unchanged
+    expect(file_get_contents($laravelLog))->toBe('');
+    expect(file_get_contents($otherLog))->toBe("Other log content\n");
 });

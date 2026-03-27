@@ -7,52 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.2.0] - 2026-03-27
-
-### Added
-- **Configuration file** - Publishable config for customizing defaults (`php artisan vendor:publish --tag="log-cleaner-config"`)
-- **Events system** - Three new events: `LogCleaning`, `LogCleaned`, `LogFileCleaned`
-- **File locking** - Prevent concurrent cleaning operations with configurable timeout
-- **Disk space validation** - Check available space before creating backups
-- **Backup retention** - Auto-cleanup old backups with configurable max limit
-- **Custom exceptions** - Type-safe exception handling:
-  - `InvalidDaysException`
-  - `NoLogFilesException`
-  - `InvalidLogLevelException`
-  - `InvalidPatternException`
-  - `PermissionException`
-  - `BackupException`
-  - `DiskSpaceException`
-  - `FileLockException`
-  - `ZlibException`
-- **New CLI options**:
-  - `--no-lock` - Disable file locking
-  - `--no-events` - Disable event dispatching
-- **PHPStan configuration** - Level 4 static analysis
-- **Laravel Pint** - Code formatting and linting (`composer format`, `composer lint`)
-
-### Changed
-- **Improved CLI output** - Beautiful table formatting with emoji indicators
-- **Better error messages** - Clear, actionable error reporting
-- **Enhanced command signature** - More descriptive option help
-- **Refactored LogCleaner class** - Cleaner architecture with separation of concerns
-- **Updated Service Provider** - Config merging and publishing support
-
-### Improved
-- **Default values from config** - Days, backup, compression, level settings
-- **Memory threshold** - Configurable threshold for memory-efficient processing
-- **Test coverage** - Comprehensive tests for events, exceptions, edge cases
-- **Test helpers** - Reusable `CreatesLogFiles` trait for testing
-- **Documentation** - Updated README with all new features
-
-### Fixed
-- **Exception handling** - Proper exception types throughout the codebase
-- **Lock file cleanup** - Always remove lock files after operations
-- **Backup file management** - Proper cleanup of old backups
-
-### Deprecated
-- Nothing - All previous functionality remains backwards compatible
-
 ## [2.1.0] - 2026-01-15
 
 ### Added
@@ -180,53 +134,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## Migration Guides
-
-### From v2.1 to v2.2
-
-#### New Features (Optional)
-
-1. **Publish configuration file** (optional):
-   ```bash
-   php artisan vendor:publish --tag="log-cleaner-config"
-   ```
-
-2. **Listen to events** (optional):
-   ```php
-   use JiordiViera\LaravelLogCleaner\Events\LogCleaned;
-   
-   // In EventServiceProvider
-   protected $listen = [
-       LogCleaned::class => [LogCleanedListener::class],
-   ];
-   ```
-
-3. **Use custom exceptions** (optional):
-   ```php
-   use JiordiViera\LaravelLogCleaner\Exceptions\InvalidDaysException;
-   
-   try {
-       LogCleaner::clear(days: -1);
-   } catch (InvalidDaysException $e) {
-       // Handle error
-   }
-   ```
-
-#### Breaking Changes
-- None - All changes are backwards compatible
-
-#### Upgrade Steps
-
-1. Update the package:
-   ```bash
-   composer require jiordiviera/laravel-log-cleaner:^2.2
-   ```
-
-2. (Optional) Publish config to customize defaults:
-   ```bash
-   php artisan vendor:publish --tag="log-cleaner-config"
-   ```
-
-3. (Optional) Add event listeners for monitoring
 
 ### From v1.x to v2.0
 
