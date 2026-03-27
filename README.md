@@ -1,25 +1,23 @@
-```
-██╗      █████╗ ██████╗  █████╗ ██╗   ██╗███████╗██╗     
-██║     ██╔══██╗██╔══██╗██╔══██╗██║   ██║██╔════╝██║     
-██║     ███████║██████╔╝███████║██║   ██║█████╗  ██║     
-██║     ██╔══██║██╔══██╗██╔══██║╚██╗ ██╔╝██╔══╝  ██║     
+██╗      █████╗ ██████╗  █████╗ ██╗   ██╗███████╗██╗
+██║     ██╔══██╗██╔══██╗██╔══██╗██║   ██║██╔════╝██║
+██║     ███████║██████╔╝███████║██║   ██║█████╗  ██║
+██║     ██╔══██║██╔══██╗██╔══██║╚██╗ ██╔╝██╔══╝  ██║
 ███████╗██║  ██║██║  ██║██║  ██║ ╚████╔╝ ███████╗███████╗
 ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝  ╚═══╝  ╚══════╝╚══════╝
 
-██╗      ██████╗  ██████╗     
-██║     ██╔═══██╗██╔════╝     
-██║     ██║   ██║██║  ███╗    
-██║     ██║   ██║██║   ██║    
-███████╗╚██████╔╝╚██████╔╝    
-╚══════╝ ╚═════╝  ╚═════╝     
+██╗      ██████╗  ██████╗
+██║     ██╔═══██╗██╔════╝
+██║     ██║   ██║██║  ███╗
+██║     ██║   ██║██║   ██║
+███████╗╚██████╔╝╚██████╔╝
+╚══════╝ ╚═════╝  ╚═════╝
 
- ██████╗██╗     ███████╗ █████╗ ███╗   ██╗███████╗██████╗ 
+ ██████╗██╗     ███████╗ █████╗ ███╗   ██╗███████╗██████╗
 ██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██╔════╝██╔══██╗
 ██║     ██║     █████╗  ███████║██╔██╗ ██║█████╗  ██████╔╝
 ██║     ██║     ██╔══╝  ██╔══██║██║╚██╗██║██╔══╝  ██╔══██╗
 ╚██████╗███████╗███████╗██║  ██║██║ ╚████║███████╗██║  ██║
  ╚═════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝
-```
 
 <p align="center">
   <a href="https://packagist.org/packages/jiordiviera/laravel-log-cleaner"><img src="https://img.shields.io/packagist/v/jiordiviera/laravel-log-cleaner?style=for-the-badge" alt="Latest Stable Version"></a>
@@ -29,7 +27,7 @@
   <a href="https://github.com/jiordiviera/laravel-log-cleaner/actions/workflows/tests.yml"><img src="https://github.com/jiordiviera/laravel-log-cleaner/actions/workflows/tests.yml/badge.svg" alt="Tests Status" style="for-the-badge" /></a>
 </p>
 
-**Laravel Log Cleaner** is a utility package designed for the efficient management of Laravel log files. It allows developers to quickly clear log data using an Artisan command, enhancing application performance and management. This tool is compatible with Laravel versions 7, 8, 9, 10, and 11.
+**Laravel Log Cleaner** is a utility package designed for the efficient management of Laravel log files. It allows developers to quickly clear log data using an Artisan command, enhancing application performance and management. This tool is compatible with Laravel versions 9, 10, 11, and 12.
 
 ## Installation
 
@@ -37,6 +35,14 @@ You can install the package via **Composer** by executing the following command:
 
 ```bash
 composer require jiordiviera/laravel-log-cleaner
+```
+
+### Publishing Configuration (Optional)
+
+To customize default behavior, publish the configuration file:
+
+```bash
+php artisan vendor:publish --provider="JiordiViera\LaravelLogCleaner\LaravelLogCleanerServiceProvider" --tag="log-cleaner-config"
 ```
 
 ## Compatibility
@@ -78,7 +84,7 @@ After installation, an Artisan command is available to clear the Laravel log fil
    php artisan log:clear --days=30
    ```
 
-### Advanced Features (v2.0+)
+### Advanced Features
 
 #### 🔒 Safe Operations
 ```bash
@@ -110,6 +116,15 @@ php artisan log:clear --days=30 --compress
 php artisan log:clear --days=30 --memory-efficient
 ```
 
+#### 🔧 Advanced Options
+```bash
+# Disable file locking (for scripted operations)
+php artisan log:clear --days=30 --no-lock
+
+# Disable event dispatching (for performance)
+php artisan log:clear --days=30 --no-events
+```
+
 #### 🚀 Combined Options
 ```bash
 # Complete workflow with all safety features
@@ -135,7 +150,7 @@ LogCleaner::clearWithBackup(30);
 // Clear with compression
 LogCleaner::clearWithCompression(30);
 
-// Clear only specific file
+// Clear only specific log file
 LogCleaner::clearOld(30, 'laravel.log');
 
 // Advanced usage with all options
@@ -162,74 +177,166 @@ LogCleaner::clear(
 | `--compress` | Compress old logs instead of deleting | `--compress` |
 | `--memory-efficient` | Force memory-efficient processing | `--memory-efficient` |
 | `--file=FILENAME` | Clean only specific log file | `--file=laravel.log` |
+| `--no-lock` | Disable file locking | `--no-lock` |
+| `--no-events` | Disable event dispatching | `--no-events` |
 
 ### Examples
 
 - **Clear all logs:**
   ```bash
   $ php artisan log:clear
-  Log file cleared successfully.
+  ✅ All logs cleared - 1,250 lines removed, 45.2 MB freed
   ```
 
 - **Clear logs older than 30 days:**
   ```bash
   $ php artisan log:clear --days=30
-  Logs older than 30 days have been removed.
+  ✅ Logs older than 30 days cleared - 850 lines removed, 32.1 MB freed
   ```
 
 - **Preview changes (dry run):**
   ```bash
   $ php artisan log:clear --days=30 --dry-run
-  [DRY RUN] Would remove 150 lines from laravel.log
-  [DRY RUN] Estimated space to free: 45.2 MB
+  🔍 Dry Run Mode - No changes will be made
+  
+  ┌─────────────┬───────────────┬───────────────┐
+  │ File        │ Lines to Remove │ Space to Free │
+  ├─────────────┼───────────────┼───────────────┤
+  │ laravel.log │ 850           │ 32.1 MB       │
+  └─────────────┴───────────────┴───────────────┘
+  
+  Total: 850 lines to be removed
   ```
 
 - **Create backup and compress:**
   ```bash
   $ php artisan log:clear --days=30 --backup --compress
-  Backup created: /path/to/laravel.log.backup.2025-07-18-14-30-15
-  Logs compressed to: laravel.log.old.2025-07-18-14-30-15.gz
-  Logs older than 30 days have been removed.
+  
+  ┌─────────────┬───────────────┬─────────────┬────────┬────────────┐
+  │ File        │ Lines Removed │ Space Freed │ Backup │ Compressed │
+  ├─────────────┼───────────────┼─────────────┼────────┼────────────┤
+  │ laravel.log │ 850           │ 32.1 MB     │ ✓      │ ✓          │
+  └─────────────┴───────────────┴─────────────┴────────┴────────────┘
+  
+  ✅ Logs older than 30 days cleared - 850 lines removed, 32.1 MB freed
+  📦 1 backup(s) created
+  🗜️ 1 file(s) compressed
+  ```
+
+- **Keep only ERROR logs:**
+  ```bash
+  $ php artisan log:clear --days=0 --level=ERROR
+  ✅ All logs cleared - 1,100 lines removed, 38.5 MB freed
   ```
 
 ## Configuration
 
-No additional configuration is necessary. The `log:clear` command is immediately available upon package installation.
+The package provides a comprehensive configuration file with sensible defaults. Publish it with:
 
-## What's New in v2.0
+```bash
+php artisan vendor:publish --tag="log-cleaner-config"
+```
 
-### 🚀 Performance & Memory Optimizations
-- **Memory-efficient processing** for large log files (>50MB)
-- **Automatic memory threshold detection** prevents out-of-memory errors
-- **Stream processing** handles multi-GB log files without memory issues
-- **Regex pattern caching** improves performance on repeated operations
+### Configuration Options
 
-### 🔒 Enhanced Safety & Robustness
-- **Pre-flight permission validation** prevents runtime errors
-- **Backup creation** with timestamp for data recovery
-- **Dry-run mode** for safe preview of operations
-- **Enhanced error handling** with detailed reporting
+```php
+return [
+    // Default number of days to keep (0 = clear all)
+    'days' => 0,
 
-### 🎯 Advanced Filtering
-- **Log level filtering** (ERROR, WARNING, INFO, DEBUG, etc.)
-- **Custom date patterns** for non-standard log formats
-- **Flexible date range selection** with improved accuracy
+    // Memory threshold for automatic memory-efficient processing (50MB default)
+    'memory_threshold' => 50 * 1024 * 1024,
 
-### 📦 Archive & Compression
-- **Compression support** for old logs instead of deletion
-- **Automatic cleanup** of temporary files
-- **Space-efficient archiving** with gzip compression
+    // Backup settings
+    'backup' => [
+        'enabled' => false,        // Enable backups by default
+        'max_backups' => 5,        // Maximum backups to keep
+        'auto_cleanup' => true,    // Auto-delete old backups
+    ],
 
-### 🔧 Breaking Changes
-- **Minimum PHP version:** 8.1+ (dropped PHP 7.x support)
-- **Minimum Laravel version:** 9.x+ (dropped Laravel 7.x-8.x support)
-- **Enhanced command signature** with new options
+    // Compression settings
+    'compression' => [
+        'enabled' => false,        // Enable compression by default
+        'level' => 9,              // Compression level (1-9)
+    ],
 
-### 📊 Performance Benchmarks
-- Handles **1GB+ log files** without memory issues
-- **50%+ performance improvement** on large file operations
-- **Zero memory leaks** with proper resource management
-- **Concurrent processing** support for multiple log files
+    // Default log level filter (null = all levels)
+    'level' => null,
+
+    // Custom date pattern for parsing logs
+    'pattern' => null,
+
+    // Minimum free disk space (MB) required for backups
+    'min_free_disk_space_mb' => 100,
+
+    // File locking settings
+    'locking' => [
+        'enabled' => true,         // Enable file locking
+        'timeout' => 30,           // Lock timeout in seconds
+    ],
+
+    // Event dispatching
+    'events' => [
+        'enabled' => true,         // Enable Laravel events
+    ],
+];
+```
+
+## Events
+
+The package dispatches Laravel events that you can listen to:
+
+```php
+use JiordiViera\LaravelLogCleaner\Events\LogCleaning;
+use JiordiViera\LaravelLogCleaner\Events\LogCleaned;
+use JiordiViera\LaravelLogCleaner\Events\LogFileCleaned;
+
+// In EventServiceProvider or elsewhere:
+protected $listen = [
+    LogCleaning::class => [
+        LogCleaningListener::class,
+    ],
+    LogCleaned::class => [
+        LogCleanedListener::class,
+    ],
+    LogFileCleaned::class => [
+        LogFileCleanedListener::class,
+    ],
+];
+```
+
+### Event Properties
+
+**LogCleaning** (dispatched before cleaning starts):
+- `$days`, `$backup`, `$compress`, `$level`, `$pattern`, `$memoryEfficient`, `$file`, `$dryRun`
+
+**LogCleaned** (dispatched after cleaning completes):
+- All properties from LogCleaning + `$results` (array of cleaning results)
+
+**LogFileCleaned** (dispatched for each file cleaned):
+- `$file`, `$linesRemoved`, `$bytesFreed`, `$backupPath`, `$compressedPath`
+
+## Exception Handling
+
+The package uses custom exceptions for precise error handling:
+
+```php
+use JiordiViera\LaravelLogCleaner\Exceptions\InvalidDaysException;
+use JiordiViera\LaravelLogCleaner\Exceptions\NoLogFilesException;
+use JiordiViera\LaravelLogCleaner\Exceptions\InvalidLogLevelException;
+use JiordiViera\LaravelLogCleaner\Exceptions\InvalidPatternException;
+use JiordiViera\LaravelLogCleaner\Exceptions\PermissionException;
+use JiordiViera\LaravelLogCleaner\Exceptions\BackupException;
+use JiordiViera\LaravelLogCleaner\Exceptions\DiskSpaceException;
+use JiordiViera\LaravelLogCleaner\Exceptions\FileLockException;
+use JiordiViera\LaravelLogCleaner\Exceptions\ZlibException;
+
+try {
+    LogCleaner::clear(days: -1);
+} catch (InvalidDaysException $e) {
+    // Handle invalid days parameter
+}
+```
 
 ## Running Tests
 
@@ -237,6 +344,28 @@ This package uses **Pest** for testing. You can run tests with the following com
 
 ```bash
 ./vendor/bin/pest
+```
+
+### Static Analysis
+
+The package includes PHPStan configuration for static analysis (level 4):
+
+```bash
+composer analyse
+# or
+./vendor/bin/phpstan analyse
+```
+
+### Code Formatting
+
+The package uses Laravel Pint for code formatting:
+
+```bash
+# Format all files
+composer format
+
+# Check formatting without modifying
+composer lint
 ```
 
 Ensure your tests are organized correctly within the `tests/` directory.
@@ -261,11 +390,49 @@ For contributors:
    composer install
    ```
 
-3. **Run tests:**
+3. **Run tests and static analysis:**
 
    ```bash
    ./vendor/bin/pest
+   composer phpstan
    ```
+
+## What's New in v2.1
+
+### 🎯 Configuration System
+- **Publishable config file** - Customize defaults without code changes
+- **Default values** for days, backup, compression, log levels
+- **Memory threshold** configuration
+- **Lock timeout** settings
+
+### 🔒 Enhanced Safety
+- **File locking** - Prevent concurrent cleaning operations
+- **Disk space validation** - Ensure sufficient space before backups
+- **Backup retention** - Auto-cleanup old backups (configurable)
+- **Custom exceptions** - Precise error handling
+
+### 📡 Events System
+- **LogCleaning** - Dispatched before cleaning starts
+- **LogCleaned** - Dispatched after cleaning completes
+- **LogFileCleaned** - Dispatched for each file cleaned
+- **Configurable** - Disable events with `--no-events`
+
+### 🎨 Improved CLI
+- **Beautiful table output** - Clear summary of operations
+- **Emoji indicators** - Easy visual scanning
+- **Detailed statistics** - Lines removed, space freed
+- **Backup/compression status** - See what was created
+
+### 🧪 Enhanced Testing
+- **Test helpers trait** - Reusable test utilities
+- **Edge case coverage** - Empty files, unicode, large files
+- **Event testing** - Verify event dispatching
+- **Exception testing** - Comprehensive error coverage
+
+### 📊 Code Quality
+- **PHPStan level 8** - Strict static analysis
+- **Custom exceptions** - Type-safe error handling
+- **Better architecture** - Clean separation of concerns
 
 ## About
 
@@ -277,6 +444,6 @@ The Laravel Log Cleaner is open-source software licensed under the [MIT License]
 
 ---
 
-> **Note:** Initially developed for Laravel 11, this package remains compatible with earlier versions (7, 8, 9, 10).
+> **Note:** This package requires PHP 8.1+ and Laravel 9.x or higher.
 
 For further information, visit the [GitHub repository](https://github.com/jiordiviera/laravel-log-cleaner).
