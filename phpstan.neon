@@ -1,0 +1,12 @@
+parameters:
+    level: 4
+    paths:
+        - %currentWorkingDirectory%/src
+    excludePaths:
+        - '*/tests/*'
+        - '*/vendor/*'
+    ignoreErrors:
+        - '#Property.*is never read, only written#'
+
+includes:
+    - ./vendor/larastan/larastan/extension.neon
