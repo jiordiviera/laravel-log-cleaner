@@ -3,7 +3,7 @@
 namespace JiordiViera\LaravelLogCleaner\Tests;
 
 use JiordiViera\LaravelLogCleaner\LaravelLogCleanerServiceProvider;
-use Orchestra\Testbench\TestCase as OrchestraTestCase;
+use \Orchestra\Testbench\TestCase as OrchestraTestCase;
 
 class TestCase extends OrchestraTestCase
 {
@@ -11,4 +11,5 @@ class TestCase extends OrchestraTestCase
     {
         return [LaravelLogCleanerServiceProvider::class];
     }
+
 }

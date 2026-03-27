@@ -1,8 +1,0 @@
-/.gitattributes export-ignore
-/.github export-ignore
-/.gitignore export-ignore
-/phpunit.xml export-ignore
-/phpstan.neon export-ignore
-/tests export-ignore
-/CHANGELOG.md export-ignore
-/SECURITY.md export-ignore
