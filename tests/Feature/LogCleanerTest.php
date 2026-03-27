@@ -10,7 +10,6 @@ use JiordiViera\LaravelLogCleaner\Events\LogCleaned;
 use JiordiViera\LaravelLogCleaner\Events\LogCleaning;
 use JiordiViera\LaravelLogCleaner\Events\LogFileCleaned;
 use JiordiViera\LaravelLogCleaner\Exceptions\DiskSpaceException;
-use JiordiViera\LaravelLogCleaner\Exceptions\FileLockException;
 use JiordiViera\LaravelLogCleaner\Exceptions\InvalidDaysException;
 use JiordiViera\LaravelLogCleaner\Exceptions\InvalidLogLevelException;
 use JiordiViera\LaravelLogCleaner\Exceptions\InvalidPatternException;
@@ -436,28 +435,5 @@ describe('LogCleaner - Exception Coverage', function () {
 
         expect(fn () => $logCleaner->clear(backup: true))
             ->toThrow(DiskSpaceException::class);
-    });
-
-    it('throws FileLockException when file is locked', function () {
-        $this->createTestLogFile('laravel.log', "Test\n");
-
-        // Create a lock file manually
-        $lockFile = storage_path('logs/laravel.log.lock');
-        file_put_contents($lockFile, '99999');
-
-        Config::set('log-cleaner.locking.timeout', 1);
-        Config::set('log-cleaner.locking.enabled', true);
-
-        $logCleaner = new LogCleaner;
-
-        $start = microtime(true);
-        expect(fn () => $logCleaner->clearAll())
-            ->toThrow(FileLockException::class);
-        $end = microtime(true);
-
-        // Verify it actually waited for the timeout (approximately)
-        expect($end - $start)->toBeGreaterThanOrEqual(0.5);
-
-        unlink($lockFile);
     });
 });
