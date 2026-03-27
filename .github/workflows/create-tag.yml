@@ -1,0 +1,50 @@
+name: Create Release Tag
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'composer.json'
+
+jobs:
+  create-tag:
+    runs-on: ubuntu-latest
+    name: Create Git Tag
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get version from composer.json
+        id: version
+        run: |
+          VERSION=$(grep '"version"' composer.json | head -1 | cut -d'"' -f4)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Check if tag already exists
+        id: tag_check
+        run: |
+          if git rev-parse "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Git tag
+        if: steps.tag_check.outputs.exists == 'false'
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git tag -a "v${{ steps.version.outputs.version }}" -m "Release v${{ steps.version.outputs.version }}"
+          git push origin "v${{ steps.version.outputs.version }}"
+          echo "✅ Tag v${{ steps.version.outputs.version }} created and pushed"
+
+      - name: Tag already exists
+        if: steps.tag_check.outputs.exists == 'true'
+        run: |
+          echo "⚠️ Tag v${{ steps.version.outputs.version }} already exists, skipping..."

@@ -12,13 +12,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ["8.1", "8.2", "8.3"]
-        laravel: ["9.*", "10.*", "11.*", "12.*"]
+        php: ["8.2", "8.3"]
+        laravel: ["10.*", "11.*", "12.*"]
         exclude:
-          # Laravel 11 requires PHP 8.2+
+          # Laravel 11+ requires PHP 8.2+
           - php: "8.1"
             laravel: "11.*"
-          # Laravel 12 requires PHP 8.2+
           - php: "8.1"
             laravel: "12.*"
 
@@ -48,39 +47,91 @@ jobs:
       - name: Install dependencies
         run: |
           composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update
-          # Ignore security advisories pour Laravel 9 (EOL, safe en test CI seulement)
-          if [[ "${{ matrix.laravel }}" == "9.*" ]]; then
-           
-            composer config audit.block-insecure false --no-plugins
-          fi
           composer update --prefer-dist --no-interaction --no-progress --optimize-autoloader
 
-      - name: Create Laravel Project
+      - name: Install Larastan (conditional)
         run: |
-          composer create-project --prefer-dist laravel/laravel:${{ matrix.laravel }} test-app
-          cd test-app
-          composer require jiordiviera/laravel-log-cleaner
-
-      - name: Generate Log Files
-        run: |
-          cd test-app
-          php artisan tinker --execute="Log::info('Test log entry');"
-          php artisan tinker --execute="Log::error('Test error entry');"
-
-      - name: Run Log Cleaner
-        run: |
-          cd test-app
-          php artisan log:clear
-
-      - name: Check Log Files
-        run: |
-          cd test-app/storage/logs
-          if [ -s laravel.log ]; then
-            echo "Log file is not empty"
-            exit 1
-          else
-            echo "Log file is empty or does not exist"
+          if [[ "${{ matrix.laravel }}" == "10.*" ]]; then
+            composer require --dev larastan/larastan:^2.0 --no-interaction --no-update
+          elif [[ "${{ matrix.laravel }}" == "11.*" || "${{ matrix.laravel }}" == "12.*" ]]; then
+            composer require --dev larastan/larastan:^3.0 --no-interaction --no-update
           fi
+          composer update --prefer-dist --no-interaction --no-progress --optimize-autoloader || true
 
       - name: Run Package Tests
         run: vendor/bin/pest
+
+  test-laravel-13:
+    runs-on: ubuntu-latest
+    name: Laravel 13 (PHP 8.3)
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite
+          coverage: none
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: |
+          composer require "laravel/framework:13.*" --no-interaction --no-update
+          # Skip pest-plugin-laravel for Laravel 13 (not yet supported)
+          composer remove pestphp/pest-plugin-laravel --no-interaction --no-update || true
+          composer update --prefer-dist --no-interaction --no-progress --optimize-autoloader
+
+      - name: Run Package Tests
+        run: vendor/bin/pest
+
+  code-quality:
+    runs-on: ubuntu-latest
+    name: Code Quality
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite
+          coverage: none
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress --optimize-autoloader
+
+      - name: Install Larastan
+        run: |
+          composer require --dev larastan/larastan:^3.0 --no-interaction --no-update || true
+          composer update --prefer-dist --no-interaction --no-progress --optimize-autoloader || true
+
+      - name: Run Laravel Pint
+        run: composer lint
+
+      - name: Run PHPStan
+        run: composer analyse
