@@ -27,7 +27,7 @@
   <a href="https://github.com/jiordiviera/laravel-log-cleaner/actions/workflows/tests.yml"><img src="https://github.com/jiordiviera/laravel-log-cleaner/actions/workflows/tests.yml/badge.svg" alt="Tests Status" style="for-the-badge" /></a>
 </p>
 
-**Laravel Log Cleaner** is a utility package designed for the efficient management of Laravel log files. It allows developers to quickly clear log data using an Artisan command, enhancing application performance and management. This tool is compatible with Laravel versions 9, 10, 11, and 12.
+**Laravel Log Cleaner** is a utility package designed for the efficient management of Laravel log files. It allows developers to quickly clear log data using an Artisan command, enhancing application performance and management. This tool is compatible with Laravel versions 9, 10, 11, 12, and 13.
 
 ## Installation
 
@@ -47,9 +47,9 @@ php artisan vendor:publish --provider="JiordiViera\LaravelLogCleaner\LaravelLogC
 
 ## Compatibility
 
-### Version 2.x (Current)
+### Version 2.2+ (Current)
+
 **PHP Requirements:**
-- PHP 8.1+
 - PHP 8.2+
 - PHP 8.3+
 
@@ -58,8 +58,16 @@ php artisan vendor:publish --provider="JiordiViera\LaravelLogCleaner\LaravelLogC
 - Laravel 10.x
 - Laravel 11.x
 - Laravel 12.x
+- Laravel 13.x ✨
+
+### Version 2.1 and below
+
+For PHP 8.1:
+- Use version 2.1.x or below
+- Laravel 9.x to 12.x support
 
 ### Version 1.x (Legacy)
+
 For older PHP versions, use version 1.x:
 - PHP 7.0+ to 8.2
 - Laravel 7.x to 11.x
