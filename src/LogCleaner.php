@@ -492,8 +492,6 @@ class LogCleaner
         }
     }
 
-
-
     private function createBackup($file): string
     {
         return $this->backupManager->createBackup($file);
@@ -642,8 +640,6 @@ class LogCleaner
         return round($bytes, 2).' '.$units[$pow];
     }
 
-
-
     private function validateDiskSpace(string $filePath): void
     {
         $this->backupManager->validateDiskSpace($filePath);
@@ -658,8 +654,6 @@ class LogCleaner
     {
         $this->lockManager->release($filePath);
     }
-
-
 
     private function cleanupOldBackups($file): void
     {
