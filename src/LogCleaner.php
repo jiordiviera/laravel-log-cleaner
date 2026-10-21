@@ -348,9 +348,10 @@ class LogCleaner
     private function clearOldLogsStandard(string $filePath, Carbon $cutoffDate, bool $compress, ?string $level, bool $dryRun): array
     {
         $content = File::get($filePath);
-        $lines = explode(PHP_EOL, $content);
-        $newLines = [];
-        $linesToRemove = [];
+        $lines = $content === '' ? [] : preg_split('/(?<=\\n)/', $content, -1, PREG_SPLIT_NO_EMPTY);
+        $newContent = '';
+        $removedContent = '';
+        $linesRemoved = 0;
         $keepRecord = true;
 
         foreach ($lines as $line) {
@@ -359,21 +360,21 @@ class LogCleaner
             }
 
             if ($keepRecord) {
-                $newLines[] = $line;
+                $newContent .= $line;
             } else {
-                $linesToRemove[] = $line;
+                $removedContent .= $line;
+                $linesRemoved++;
             }
         }
 
-        $linesRemoved = count($linesToRemove);
-        $bytesFreed = array_sum(array_map('strlen', $linesToRemove));
+        $bytesFreed = strlen($removedContent);
 
         if (! $dryRun) {
             if ($compress) {
-                $compressedPath = $this->compressOldLogs($filePath, $linesToRemove);
+                $compressedPath = $this->compressOldLogs($filePath, explode(PHP_EOL, $removedContent));
             }
 
-            File::put($filePath, implode(PHP_EOL, $newLines));
+            File::put($filePath, $newContent);
         }
 
         return [
@@ -424,7 +425,7 @@ class LogCleaner
                 }
             } else {
                 $linesRemoved++;
-                $bytesFreed += strlen(rtrim($line, "\r\n"));
+                $bytesFreed += strlen($line);
 
                 if ($compressHandle) {
                     gzwrite($compressHandle, $line);
@@ -585,10 +586,21 @@ class LogCleaner
                 $result = $this->dryRunMemoryEfficient($filePath, $cutoffDate, $level);
             } else {
                 $content = File::get($filePath);
-                $lines = explode(PHP_EOL, $content);
-                $newLines = $this->filterOldLogs($lines, $cutoffDate, $level);
-                $removedCount = count($lines) - count($newLines);
-                $estimatedBytes = array_sum(array_map('strlen', array_diff($lines, $newLines)));
+                $lines = $content === '' ? [] : preg_split('/(?<=\\n)/', $content, -1, PREG_SPLIT_NO_EMPTY);
+                $removedCount = 0;
+                $estimatedBytes = 0;
+                $keepRecord = true;
+
+                foreach ($lines as $line) {
+                    if ($this->isLogRecordStart($line)) {
+                        $keepRecord = $this->shouldKeepLine($line, $cutoffDate, $level);
+                    }
+
+                    if (! $keepRecord) {
+                        $removedCount++;
+                        $estimatedBytes += strlen($line);
+                    }
+                }
                 $result = [
                     'file' => basename($filePath),
                     'removed_lines' => $removedCount,
@@ -612,9 +624,13 @@ class LogCleaner
         $removedCount = 0;
         $estimatedBytes = 0;
 
+        $keepRecord = true;
         while (($line = fgets($inputHandle)) !== false) {
-            $line = rtrim($line, "\r\n");
-            if (! $this->shouldKeepLine($line, $cutoffDate, $level)) {
+            if ($this->isLogRecordStart($line)) {
+                $keepRecord = $this->shouldKeepLine($line, $cutoffDate, $level);
+            }
+
+            if (! $keepRecord) {
                 $removedCount++;
                 $estimatedBytes += strlen($line);
             }
