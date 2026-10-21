@@ -119,5 +119,8 @@ jobs:
       - name: Run Laravel Pint
         run: composer lint
 
+      - name: Install Larastan for static analysis
+        run: composer require --dev larastan/larastan:^3.0 --with-all-dependencies --no-interaction --no-progress
+
       - name: Run PHPStan
         run: composer analyse
