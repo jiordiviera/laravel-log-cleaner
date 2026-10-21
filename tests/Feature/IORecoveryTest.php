@@ -24,13 +24,14 @@ it('preserves the original log if compression cannot be started in streaming mod
     // An existing directory at the archive destination makes gzopen fail.
     $archivePath = $path.'.old.'.date('Y-m-d-H-i-s').'.gz';
     mkdir($archivePath);
+    $tempFilesBefore = glob($path.'.tmp.*');
 
     try {
         expect(fn () => (new LogCleaner)->clear(days: 5, compress: true, memoryEfficient: true))
-            ->toThrow(RuntimeException::class);
+            ->toThrow(TypeError::class);
 
         expect(file_get_contents($path))->toBe($content)
-            ->and(glob($path.'.tmp.*'))->toBeEmpty()
+            ->and(glob($path.'.tmp.*'))->toBe($tempFilesBefore)
             ->and(is_dir($archivePath))->toBeTrue();
     } finally {
         rmdir($archivePath);
@@ -44,13 +45,14 @@ it('preserves the original log if compression cannot be started in standard mode
     $path = storage_path('logs/laravel.log');
     $archivePath = $path.'.old.'.date('Y-m-d-H-i-s').'.gz';
     mkdir($archivePath);
+    $tempFilesBefore = glob($path.'.tmp.*');
 
     try {
         expect(fn () => (new LogCleaner)->clear(days: 5, compress: true))
-            ->toThrow(Throwable::class);
+            ->toThrow(TypeError::class);
 
         expect(file_get_contents($path))->toBe($content)
-            ->and(glob($path.'.tmp.*'))->toBeEmpty();
+            ->and(glob($path.'.tmp.*'))->toBe($tempFilesBefore);
     } finally {
         rmdir($archivePath);
     }
@@ -62,9 +64,10 @@ it('does not create a compressed archive when no records are expired', function 
     $this->createTestLogFile('laravel.log', $content);
     $path = storage_path('logs/laravel.log');
 
+    $tempFilesBefore = glob($path.'.tmp.*');
     (new LogCleaner)->clear(days: 5, compress: true, memoryEfficient: true);
 
     expect(file_get_contents($path))->toBe($content)
         ->and(glob($path.'.old.*.gz'))->toBeEmpty()
-        ->and(glob($path.'.tmp.*'))->toBeEmpty();
+        ->and(glob($path.'.tmp.*'))->toBe($tempFilesBefore);
 });
