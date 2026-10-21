@@ -24,7 +24,7 @@ it('rejects a failed plain write without changing an existing log', function () 
         fclose($stream);
 
         expect(fn () => (new LogFileOperations)->writeAll($stream, str_repeat('x', 4096)))
-            ->toThrow(Throwable::class);
+            ->toThrow(RuntimeException::class);
         expect(file_get_contents($path))->toBe($original);
     } finally {
         if (is_resource($stream)) {
@@ -42,7 +42,7 @@ it('rejects writes to a compressed stream opened for reading', function () {
 
     try {
         expect(fn () => (new LogFileOperations)->writeCompressed($handle, str_repeat('x', 4096)))
-            ->toThrow(Throwable::class);
+            ->toThrow(RuntimeException::class);
         expect(file_get_contents($path))->toBe($original);
     } finally {
         gzclose($handle);
@@ -61,7 +61,7 @@ it('rejects disk-full writes when the Linux full device is available', function 
 
     try {
         expect(fn () => (new LogFileOperations)->writeAll($handle, str_repeat('x', 65536)))
-            ->toThrow(Throwable::class);
+            ->toThrow(RuntimeException::class);
         expect(file_get_contents($path))->toBe($original);
     } finally {
         fclose($handle);
