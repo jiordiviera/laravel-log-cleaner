@@ -1,7 +1,6 @@
 {
   "name": "jiordiviera/laravel-log-cleaner",
   "description": "A Laravel package to easily clean the log files.",
-  "version": "2.2.0",
   "keywords": [
     "laravel",
     "log",
@@ -23,9 +22,9 @@
     }
   ],
   "require": {
-    "php": "^8.2|^8.3",
-    "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
-    "illuminate/console": "^10.0|^11.0|^12.0|^13.0"
+    "php": "^8.2",
+    "illuminate/support": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+    "illuminate/console": "^10.0 || ^11.0 || ^12.0 || ^13.0"
   },
   "require-dev": {
     "laravel/pint": "^1.29",

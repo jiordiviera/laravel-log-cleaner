@@ -206,8 +206,8 @@ describe('LogCleaner - File Locking', function () {
         $logCleaner = new LogCleaner;
         $logCleaner->clearAll();
 
-        // Lock file should be removed after operation
-        expect(file_exists(storage_path('logs/laravel.log.lock')))->toBeFalse();
+        // Persistent lock files are intentional: deleting them creates inode races.
+        expect(file_exists(storage_path('logs/laravel.log.lock')))->toBeTrue();
     });
 
     it('respects lock timeout', function () {

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-10-21
+
+### Fixed
+- Preserve multiline log records and stack traces during age and level filtering, including malformed continuations and unterminated final lines.
+- Guard against partial I/O writes, failed gzip archives and concurrent file modifications, preserving original log data on detected failures.
+- Use cooperative atomic file locking with reliable release on cleanup failures.
+
+### Improved
+- Expanded regression coverage for concurrent writes, large files, duplicate records, dry-run, disk-space errors, compression failures and recoverability.
+- Reorganized the README with a lightweight SVG banner, concise usage examples and clearly documented limitations.
+- Aligned Composer constraints and CI documentation with supported PHP 8.2+ and Laravel 10–13 combinations (Laravel 13 requires PHP 8.3+).
+
+### Internal
+- Extracted record filtering, checked file operations, locking, backup management and gzip archive creation into focused collaborators.
+- Preserved the v2 public API; this is a backward-compatible minor release.
+
 ## [2.2.0] - 2026-03-27
 
 ### Added

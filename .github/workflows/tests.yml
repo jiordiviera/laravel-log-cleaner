@@ -14,12 +14,6 @@ jobs:
       matrix:
         php: ["8.2", "8.3"]
         laravel: ["10.*", "11.*", "12.*"]
-        exclude:
-          # Laravel 11+ requires PHP 8.2+
-          - php: "8.1"
-            laravel: "11.*"
-          - php: "8.1"
-            laravel: "12.*"
 
     name: P${{ matrix.php }} - L${{ matrix.laravel }}
 
@@ -41,22 +35,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
+          key: ${{ runner.os }}-composer-${{ matrix.php }}-laravel-${{ matrix.laravel }}-${{ hashFiles('composer.json') }}
+          restore-keys: ${{ runner.os }}-composer-${{ matrix.php }}-laravel-${{ matrix.laravel }}-
 
       - name: Install dependencies
         run: |
           composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update
           composer update --prefer-dist --no-interaction --no-progress --optimize-autoloader
-
-      - name: Install Larastan (conditional)
-        run: |
-          if [[ "${{ matrix.laravel }}" == "10.*" ]]; then
-            composer require --dev larastan/larastan:^2.0 --no-interaction --no-update
-          elif [[ "${{ matrix.laravel }}" == "11.*" || "${{ matrix.laravel }}" == "12.*" ]]; then
-            composer require --dev larastan/larastan:^3.0 --no-interaction --no-update
-          fi
-          composer update --prefer-dist --no-interaction --no-progress --optimize-autoloader || true
 
       - name: Run Package Tests
         run: vendor/bin/pest
@@ -64,7 +49,6 @@ jobs:
   test-laravel-13:
     runs-on: ubuntu-latest
     name: Laravel 13 (PHP 8.3)
-    continue-on-error: true
 
     steps:
       - uses: actions/checkout@v4
@@ -84,8 +68,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
+          key: ${{ runner.os }}-composer-8.3-laravel-13-${{ hashFiles('composer.json') }}
+          restore-keys: ${{ runner.os }}-composer-8.3-laravel-13-
 
       - name: Install dependencies
         run: |
@@ -119,19 +103,20 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
+          key: ${{ runner.os }}-composer-quality-${{ hashFiles('composer.json', 'composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-quality-
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress --optimize-autoloader
 
-      - name: Install Larastan
-        run: |
-          composer require --dev larastan/larastan:^3.0 --no-interaction --no-update || true
-          composer update --prefer-dist --no-interaction --no-progress --optimize-autoloader || true
+      - name: Validate Composer manifest
+        run: composer validate --strict --no-check-publish
 
       - name: Run Laravel Pint
         run: composer lint
+
+      - name: Install Larastan for static analysis
+        run: composer require --dev larastan/larastan:^3.0 --with-all-dependencies --no-interaction --no-progress
 
       - name: Run PHPStan
         run: composer analyse

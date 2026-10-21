@@ -12,12 +12,8 @@ use Illuminate\Support\Facades\File;
 use JiordiViera\LaravelLogCleaner\Events\LogCleaned;
 use JiordiViera\LaravelLogCleaner\Events\LogCleaning;
 use JiordiViera\LaravelLogCleaner\Events\LogFileCleaned;
-use JiordiViera\LaravelLogCleaner\Exceptions\BackupException;
-use JiordiViera\LaravelLogCleaner\Exceptions\DiskSpaceException;
-use JiordiViera\LaravelLogCleaner\Exceptions\FileLockException;
 use JiordiViera\LaravelLogCleaner\Exceptions\InvalidDaysException;
 use JiordiViera\LaravelLogCleaner\Exceptions\InvalidLogLevelException;
-use JiordiViera\LaravelLogCleaner\Exceptions\InvalidPatternException;
 use JiordiViera\LaravelLogCleaner\Exceptions\NoLogFilesException;
 use JiordiViera\LaravelLogCleaner\Exceptions\PermissionException;
 use JiordiViera\LaravelLogCleaner\Exceptions\ZlibException;
@@ -51,13 +47,28 @@ class LogCleaner
         '/^(\d{4}-\d{2}-\d{2})/',
     ];
 
-    /** @var array<string, string> */
-    private array $compiledPatterns = [];
+    private LogRecordFilter $recordFilter;
+
+    private LogFileOperations $fileOperations;
+
+    private FileLockManager $lockManager;
+
+    private LogBackupManager $backupManager;
+
+    private LogCompressionManager $compressionManager;
 
     private ?OutputStyle $output = null;
 
     /** @var array<int, array{file: string, lines_removed: int, bytes_freed: int, backup_path: string|null, compressed_path: string|null}> */
     private array $cleaningResults = [];
+
+    public function __construct()
+    {
+        $this->fileOperations = new LogFileOperations;
+        $this->lockManager = new FileLockManager;
+        $this->backupManager = new LogBackupManager;
+        $this->compressionManager = new LogCompressionManager($this->fileOperations);
+    }
 
     public function setOutput(OutputStyle $output): self
     {
@@ -107,7 +118,7 @@ class LogCleaner
         $eventsEnabled = Config::get('log-cleaner.events.enabled', true);
 
         $this->validateDays($days);
-        $this->compilePatterns($pattern);
+        $this->recordFilter = new LogRecordFilter($pattern);
         $this->validateLogLevel($level);
         $this->validateZlibExtension($compress);
 
@@ -118,7 +129,7 @@ class LogCleaner
         }
 
         // Dispatch starting event
-        if ($eventsEnabled) {
+        if ($eventsEnabled && ! $dryRun) {
             Event::dispatch(new LogCleaning($days, $backup, $compress, $level, $pattern, $memoryEfficient, $file, $dryRun));
         }
 
@@ -137,39 +148,39 @@ class LogCleaner
                 $this->acquireLock($filePath);
             }
 
-            $this->validatePermissions([$logFile]);
+            try {
+                $this->validatePermissions([$logFile], $dryRun);
 
-            $linesRemoved = 0;
-            $bytesFreed = 0;
-            $backupPath = null;
-            $compressedPath = null;
+                $linesRemoved = 0;
+                $bytesFreed = 0;
+                $backupPath = null;
+                $compressedPath = null;
 
-            if ($backup && ! $dryRun) {
-                $backupPath = $this->createBackup($logFile);
-                $this->cleanupOldBackups($logFile);
-            }
+                if ($backup && ! $dryRun) {
+                    $backupPath = $this->createBackup($logFile);
+                    $this->cleanupOldBackups($logFile);
+                }
 
-            if ($days === 0 && ! $level) {
-                $result = $this->clearAllLogs($logFile, $dryRun);
-                $linesRemoved = $result['lines'];
-                $bytesFreed = $result['bytes'];
-            } else {
-                $result = $this->clearOldLogs(
-                    $logFile,
-                    $days,
-                    $compress,
-                    $level,
-                    $memoryEfficient,
-                    $dryRun,
-                    $memoryThreshold
-                );
-                $linesRemoved = $result['lines'];
-                $bytesFreed = $result['bytes'];
-                $compressedPath = $result['compressed_path'] ?? null;
-            }
+                if ($days === 0 && ! $level) {
+                    $result = $this->clearAllLogs($logFile, $dryRun);
+                    $linesRemoved = $result['lines'];
+                    $bytesFreed = $result['bytes'];
+                } else {
+                    $result = $this->clearOldLogs(
+                        $logFile,
+                        $days,
+                        $compress,
+                        $level,
+                        $memoryEfficient,
+                        $dryRun,
+                        $memoryThreshold
+                    );
+                    $linesRemoved = $result['lines'];
+                    $bytesFreed = $result['bytes'];
+                    $compressedPath = $result['compressed_path'] ?? null;
+                }
 
-            // Release lock
-            if (Config::get('log-cleaner.locking.enabled', true) && ! $dryRun) {
+            } finally {
                 $this->releaseLock($filePath);
             }
 
@@ -227,12 +238,25 @@ class LogCleaner
         $filePath = $file->getPathname();
         $bytes = filesize($filePath);
 
+        $lines = 0;
+        $handle = fopen($filePath, 'rb');
+        if ($handle === false) {
+            throw new RuntimeException('Unable to read log file for line counting');
+        }
+        try {
+            while (fgets($handle) !== false) {
+                $lines++;
+            }
+        } finally {
+            fclose($handle);
+        }
+
         if (! $dryRun) {
-            File::put($filePath, '');
+            $this->replaceLogContent($filePath, '');
         }
 
         return [
-            'lines' => count(file($filePath, FILE_IGNORE_NEW_LINES)),
+            'lines' => $lines,
             'bytes' => $bytes,
         ];
     }
@@ -259,70 +283,43 @@ class LogCleaner
         return $this->clearOldLogsStandard($filePath, $cutoffDate, $compress, $level, $dryRun);
     }
 
-    private function filterOldLogs(array $lines, Carbon $cutoffDate, ?string $level): array
-    {
-        return array_filter($lines, function ($line) use ($cutoffDate, $level) {
-            return $this->shouldKeepLine($line, $cutoffDate, $level);
-        });
-    }
-
-    private function shouldKeepLine(string $line, Carbon $cutoffDate, ?string $level): bool
-    {
-        if (! $this->shouldKeepLineByLevel($line, $level)) {
-            return false;
-        }
-
-        if ($level && $cutoffDate->isToday()) {
-            return true;
-        }
-
-        foreach ($this->compiledPatterns as $pattern => $format) {
-            if (preg_match($pattern, $line, $matches)) {
-                try {
-                    $logDate = Carbon::createFromFormat($format, $matches[1])->startOfDay();
-
-                    return $logDate->greaterThanOrEqualTo($cutoffDate);
-                } catch (\Exception $e) {
-                    continue;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    private function compilePatterns(?string $customPattern): void
-    {
-        if ($customPattern) {
-            if (@preg_match($customPattern, '') === false) {
-                throw InvalidPatternException::create(preg_last_error_msg());
-            }
-            $this->compiledPatterns = [$customPattern => 'Y-m-d'];
-        } else {
-            $this->compiledPatterns = [
-                '/^\[(\d{4}-\d{2}-\d{2})/' => 'Y-m-d',
-                '/^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/' => 'Y-m-d H:i:s',
-                '/^(\d{4}-\d{2}-\d{2})/' => 'Y-m-d',
-            ];
-        }
-    }
-
     private function clearOldLogsStandard(string $filePath, Carbon $cutoffDate, bool $compress, ?string $level, bool $dryRun): array
     {
         $content = File::get($filePath);
-        $lines = explode(PHP_EOL, $content);
-        $newLines = $this->filterOldLogs($lines, $cutoffDate, $level);
+        $lines = $content === '' ? [] : preg_split('/(?<=\\n)/', $content, -1, PREG_SPLIT_NO_EMPTY);
+        $newContent = '';
+        $removedContent = '';
+        $linesRemoved = 0;
+        $keepRecord = true;
 
-        $linesToRemove = array_diff($lines, $newLines);
-        $linesRemoved = count($linesToRemove);
-        $bytesFreed = array_sum(array_map('strlen', $linesToRemove));
-
-        if (! $dryRun) {
-            if ($compress) {
-                $compressedPath = $this->compressOldLogs($filePath, $linesToRemove);
+        foreach ($lines as $line) {
+            if ($this->recordFilter->isRecordStart($line)) {
+                $keepRecord = $this->recordFilter->shouldKeep($line, $cutoffDate, $level);
             }
 
-            File::put($filePath, implode(PHP_EOL, $newLines));
+            if ($keepRecord) {
+                $newContent .= $line;
+            } else {
+                $removedContent .= $line;
+                $linesRemoved++;
+            }
+        }
+
+        $bytesFreed = strlen($removedContent);
+
+        if (! $dryRun) {
+            if ($compress && $removedContent !== '') {
+                $compressedPath = $this->compressOldLogs($filePath, [$removedContent]);
+            }
+
+            try {
+                $this->replaceLogContent($filePath, $newContent);
+            } catch (\Throwable $e) {
+                if (isset($compressedPath) && is_file($compressedPath)) {
+                    @unlink($compressedPath);
+                }
+                throw $e;
+            }
         }
 
         return [
@@ -334,74 +331,165 @@ class LogCleaner
 
     private function clearOldLogsMemoryEfficient(string $filePath, Carbon $cutoffDate, bool $compress, ?string $level, bool $dryRun): array
     {
-        $tempFile = $filePath.'.tmp';
+        clearstatcache(true, $filePath);
+        $originalStat = stat($filePath);
+        if ($originalStat === false) {
+            throw new RuntimeException('Unable to stat log file before cleaning');
+        }
+
+        $inputHandle = @fopen($filePath, 'rb');
+        if ($inputHandle === false) {
+            throw new RuntimeException('Unable to open log file for reading');
+        }
+
+        $tempFile = null;
+        $outputHandle = null;
         $compressHandle = null;
         $compressedPath = null;
-
-        if ($compress && ! $dryRun) {
-            $compressedPath = $filePath.'.old.'.date('Y-m-d-H-i-s').'.gz';
-            $compressHandle = gzopen($compressedPath, 'w9');
-        }
-
-        $inputHandle = fopen($filePath, 'r');
-        $outputHandle = fopen($tempFile, 'w');
-
-        if (! $inputHandle || ! $outputHandle) {
-            throw new RuntimeException('Unable to open file handles for processing');
-        }
-
-        $firstLine = true;
         $linesRemoved = 0;
         $bytesFreed = 0;
+        $keepRecord = true;
 
-        while (($line = fgets($inputHandle)) !== false) {
-            $line = rtrim($line, "\r\n");
-
-            if ($this->shouldKeepLine($line, $cutoffDate, $level)) {
-                if (! $firstLine) {
-                    fwrite($outputHandle, PHP_EOL);
+        try {
+            if (! $dryRun) {
+                $tempFile = tempnam(dirname($filePath), basename($filePath).'.tmp.');
+                if ($tempFile === false) {
+                    throw new RuntimeException('Unable to create temporary log file');
                 }
-                fwrite($outputHandle, $line);
-                $firstLine = false;
-            } else {
-                $linesRemoved++;
-                $bytesFreed += strlen($line);
 
-                if ($compressHandle) {
-                    gzwrite($compressHandle, $line.PHP_EOL);
+                $outputHandle = @fopen($tempFile, 'wb');
+                if ($outputHandle === false) {
+                    throw new RuntimeException('Unable to open temporary log file');
+                }
+            }
+
+            while (($line = fgets($inputHandle)) !== false) {
+                if ($this->recordFilter->isRecordStart($line)) {
+                    $keepRecord = $this->recordFilter->shouldKeep($line, $cutoffDate, $level);
+                }
+
+                if ($keepRecord) {
+                    if ($outputHandle !== null) {
+                        $this->writeAll($outputHandle, $line);
+                    }
+                } else {
+                    $linesRemoved++;
+                    $bytesFreed += strlen($line);
+
+                    if ($compress && ! $dryRun) {
+                        if ($compressHandle === null) {
+                            $compressedPath = $filePath.'.old.'.date('Y-m-d-H-i-s').'.gz';
+                            $compressHandle = @gzopen($compressedPath, 'w9');
+                            if ($compressHandle === false) {
+                                throw new RuntimeException('Unable to create compressed log archive');
+                            }
+                        }
+
+                        $this->writeCompressed($compressHandle, $line);
+                    }
+                }
+            }
+
+            if (! feof($inputHandle)) {
+                throw new RuntimeException('Failed to read complete log file');
+            }
+
+            if ($outputHandle !== null) {
+                $flushed = fflush($outputHandle);
+                $closed = fclose($outputHandle);
+                $outputHandle = null;
+                if (! $flushed || ! $closed) {
+                    throw new RuntimeException('Failed to flush or close temporary log file');
+                }
+            }
+
+            if ($compressHandle !== null) {
+                if (! gzclose($compressHandle)) {
+                    $compressHandle = null;
+                    throw new RuntimeException('Failed to close compressed log archive');
+                }
+                $compressHandle = null;
+            }
+
+            if (! $dryRun) {
+                $this->assertLogFileUnchanged($filePath, $originalStat);
+                if (! rename($tempFile, $filePath)) {
+                    throw new RuntimeException('Failed to replace original file with cleaned version');
+                }
+                $tempFile = null;
+            }
+
+            return [
+                'lines' => $linesRemoved,
+                'bytes' => $bytesFreed,
+                'compressed_path' => $compressedPath,
+            ];
+        } catch (\Throwable $e) {
+            if ($compressedPath !== null && is_file($compressedPath)) {
+                @unlink($compressedPath);
+            }
+
+            throw $e;
+        } finally {
+            // Always remove the staging file, even when closing a stream fails.
+            // Laravel converts some PHP stream warnings into exceptions.
+            try {
+                if (is_resource($outputHandle)) {
+                    @fclose($outputHandle);
+                }
+            } finally {
+                try {
+                    if (is_resource($compressHandle)) {
+                        @gzclose($compressHandle);
+                    }
+                } finally {
+                    try {
+                        if (is_resource($inputHandle)) {
+                            @fclose($inputHandle);
+                        }
+                    } finally {
+                        if ($tempFile !== null && is_file($tempFile)) {
+                            @unlink($tempFile);
+                        }
+                    }
                 }
             }
         }
-
-        fclose($inputHandle);
-        fclose($outputHandle);
-
-        if ($compressHandle) {
-            gzclose($compressHandle);
-        }
-
-        if (! $dryRun) {
-            if (! rename($tempFile, $filePath)) {
-                unlink($tempFile);
-                throw new RuntimeException('Failed to replace original file with cleaned version');
-            }
-        } else {
-            unlink($tempFile);
-        }
-
-        return [
-            'lines' => $linesRemoved,
-            'bytes' => $bytesFreed,
-            'compressed_path' => ($compress && ! $dryRun) ? $compressedPath : null,
-        ];
     }
 
-    private function validatePermissions(array $logFiles): void
+    private function replaceLogContent(string $filePath, string $content): void
+    {
+        $this->fileOperations->replaceContent($filePath, $content);
+    }
+
+    /** @param resource $handle */
+    private function writeAll($handle, string $content): void
+    {
+        $this->fileOperations->writeAll($handle, $content);
+    }
+
+    /** @param resource $handle */
+    private function writeCompressed($handle, string $content): void
+    {
+        $this->fileOperations->writeCompressed($handle, $content);
+    }
+
+    /**
+     * Kept as a private compatibility shim for the existing regression tests.
+     *
+     * @param array<string|int, mixed> $originalStat
+     */
+    private function assertLogFileUnchanged(string $filePath, array $originalStat): void
+    {
+        $this->fileOperations->assertUnchanged($filePath, $originalStat);
+    }
+
+    private function validatePermissions(array $logFiles, bool $readOnly = false): void
     {
         foreach ($logFiles as $file) {
             $filePath = $file->getPathname();
 
-            if (! is_readable($filePath) || ! is_writable($filePath)) {
+            if (! is_readable($filePath) || (! $readOnly && ! is_writable($filePath))) {
                 throw PermissionException::create($filePath);
             }
         }
@@ -409,14 +497,7 @@ class LogCleaner
 
     private function createBackup($file): string
     {
-        $filePath = $file->getPathname();
-        $backupPath = $filePath.'.backup.'.date('Y-m-d-H-i-s');
-
-        if (! copy($filePath, $backupPath)) {
-            throw BackupException::create($filePath);
-        }
-
-        return $backupPath;
+        return $this->backupManager->createBackup($file);
     }
 
     private function validateLogLevel(?string $level): void
@@ -433,49 +514,16 @@ class LogCleaner
         }
     }
 
-    private function shouldKeepLineByLevel(string $line, ?string $filterLevel): bool
-    {
-        if (! $filterLevel) {
-            return true;
-        }
-
-        foreach (self::LOG_LEVELS as $level) {
-            if (preg_match('/\.'.$level.':/', $line)) {
-                return strtoupper($filterLevel) === $level;
-            }
-        }
-
-        return true;
-    }
-
     private function compressOldLogs(string $filePath, array $linesToCompress): ?string
     {
-        if (empty($linesToCompress)) {
-            return null;
-        }
-
-        $compressedPath = $filePath.'.old.'.date('Y-m-d-H-i-s').'.gz';
-        $compressionLevel = Config::get('log-cleaner.compression.level', 9);
-        $handle = gzopen($compressedPath, 'w'.$compressionLevel);
-
-        if (! $handle) {
-            throw new RuntimeException('Failed to create compressed file: '.$compressedPath);
-        }
-
-        foreach ($linesToCompress as $line) {
-            gzwrite($handle, $line.PHP_EOL);
-        }
-
-        gzclose($handle);
-
-        return $compressedPath;
+        return $this->compressionManager->compressOldLogs($filePath, $linesToCompress);
     }
 
     public function dryRun(int $days = 0, ?string $file = null, ?string $level = null, ?string $pattern = null): array
     {
         $logDir = $this->getLogDirectory();
         $this->validateDays($days);
-        $this->compilePatterns($pattern);
+        $this->recordFilter = new LogRecordFilter($pattern);
         $this->validateLogLevel($level);
 
         $logFiles = $this->getLogFiles($logDir, $file);
@@ -495,10 +543,21 @@ class LogCleaner
                 $result = $this->dryRunMemoryEfficient($filePath, $cutoffDate, $level);
             } else {
                 $content = File::get($filePath);
-                $lines = explode(PHP_EOL, $content);
-                $newLines = $this->filterOldLogs($lines, $cutoffDate, $level);
-                $removedCount = count($lines) - count($newLines);
-                $estimatedBytes = array_sum(array_map('strlen', array_diff($lines, $newLines)));
+                $lines = $content === '' ? [] : preg_split('/(?<=\\n)/', $content, -1, PREG_SPLIT_NO_EMPTY);
+                $removedCount = 0;
+                $estimatedBytes = 0;
+                $keepRecord = true;
+
+                foreach ($lines as $line) {
+                    if ($this->recordFilter->isRecordStart($line)) {
+                        $keepRecord = $this->recordFilter->shouldKeep($line, $cutoffDate, $level);
+                    }
+
+                    if (! $keepRecord) {
+                        $removedCount++;
+                        $estimatedBytes += strlen($line);
+                    }
+                }
                 $result = [
                     'file' => basename($filePath),
                     'removed_lines' => $removedCount,
@@ -522,9 +581,13 @@ class LogCleaner
         $removedCount = 0;
         $estimatedBytes = 0;
 
+        $keepRecord = true;
         while (($line = fgets($inputHandle)) !== false) {
-            $line = rtrim($line, "\r\n");
-            if (! $this->shouldKeepLine($line, $cutoffDate, $level)) {
+            if ($this->recordFilter->isRecordStart($line)) {
+                $keepRecord = $this->recordFilter->shouldKeep($line, $cutoffDate, $level);
+            }
+
+            if (! $keepRecord) {
                 $removedCount++;
                 $estimatedBytes += strlen($line);
             }
@@ -552,73 +615,22 @@ class LogCleaner
 
     private function validateDiskSpace(string $filePath): void
     {
-        $minSpaceMb = Config::get('log-cleaner.min_free_disk_space_mb', 100);
-
-        if ($minSpaceMb <= 0) {
-            return;
-        }
-
-        $fileSize = filesize($filePath);
-        $requiredSpace = $fileSize * 1.1; // Add 10% buffer
-        $requiredSpaceMb = $requiredSpace / 1024 / 1024;
-
-        $freeSpace = disk_free_space(dirname($filePath)) / 1024 / 1024;
-
-        if ($freeSpace < $requiredSpaceMb) {
-            throw DiskSpaceException::insufficient($requiredSpaceMb, $freeSpace);
-        }
-
-        if ($freeSpace < $minSpaceMb) {
-            throw DiskSpaceException::insufficient($minSpaceMb, $freeSpace);
-        }
+        $this->backupManager->validateDiskSpace($filePath);
     }
 
     private function acquireLock(string $filePath): void
     {
-        $lockFile = $filePath.'.lock';
-        $timeout = Config::get('log-cleaner.locking.timeout', 30);
-        $startTime = time();
-
-        while (file_exists($lockFile)) {
-            if (time() - $startTime >= $timeout) {
-                throw FileLockException::timeout($filePath, $timeout);
-            }
-            usleep(100000); // Wait 100ms
-        }
-
-        file_put_contents($lockFile, getmypid());
+        $this->lockManager->acquire($filePath);
     }
 
     private function releaseLock(string $filePath): void
     {
-        $lockFile = $filePath.'.lock';
-        if (file_exists($lockFile)) {
-            unlink($lockFile);
-        }
+        $this->lockManager->release($filePath);
     }
 
     private function cleanupOldBackups($file): void
     {
-        $maxBackups = Config::get('log-cleaner.backup.max_backups', 5);
-        $autoCleanup = Config::get('log-cleaner.backup.auto_cleanup', true);
-
-        if (! $autoCleanup || $maxBackups <= 0) {
-            return;
-        }
-
-        $filePath = $file->getPathname();
-        $backupPattern = preg_quote($filePath.'.backup.', '/').'\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}';
-
-        $backupFiles = glob($filePath.'.backup.*');
-
-        if (count($backupFiles) > $maxBackups) {
-            sort($backupFiles);
-            $filesToRemove = array_slice($backupFiles, 0, count($backupFiles) - $maxBackups);
-
-            foreach ($filesToRemove as $fileToRemove) {
-                unlink($fileToRemove);
-            }
-        }
+        $this->backupManager->cleanupOldBackups($file);
     }
 
     public function getCleaningResults(): array
