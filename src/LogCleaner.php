@@ -356,6 +356,14 @@ class LogCleaner
             $compressHandle = gzopen($compressedPath, 'w9');
         }
 
+        // Capture the original file identity before streaming. If a writer changes
+        // the file during processing, do not replace it with a stale snapshot.
+        clearstatcache(true, $filePath);
+        $originalStat = stat($filePath);
+        if ($originalStat === false) {
+            throw new RuntimeException('Unable to stat log file before cleaning');
+        }
+
         $inputHandle = fopen($filePath, 'r');
         $outputHandle = $dryRun ? null : fopen($tempFile, 'w');
 
@@ -398,6 +406,13 @@ class LogCleaner
         }
 
         if (! $dryRun) {
+            try {
+                $this->assertLogFileUnchanged($filePath, $originalStat);
+            } catch (RuntimeException $e) {
+                unlink($tempFile);
+                throw $e;
+            }
+
             if (! rename($tempFile, $filePath)) {
                 unlink($tempFile);
                 throw new RuntimeException('Failed to replace original file with cleaned version');
@@ -409,6 +424,28 @@ class LogCleaner
             'bytes' => $bytesFreed,
             'compressed_path' => ($compress && ! $dryRun) ? $compressedPath : null,
         ];
+    }
+
+    /**
+     * Detect writes or rotations observed during the streaming pass.
+     * This is an optimistic guard, not a replacement for writer coordination:
+     * an append between the final stat and rename is still possible.
+     *
+     * @param  array<string|int, mixed>  $originalStat
+     */
+    private function assertLogFileUnchanged(string $filePath, array $originalStat): void
+    {
+        clearstatcache(true, $filePath);
+        $currentStat = stat($filePath);
+
+        if ($currentStat === false
+            || $currentStat['dev'] !== $originalStat['dev']
+            || $currentStat['ino'] !== $originalStat['ino']
+            || $currentStat['size'] !== $originalStat['size']
+            || $currentStat['mtime'] !== $originalStat['mtime']
+            || $currentStat['ctime'] !== $originalStat['ctime']) {
+            throw new RuntimeException('Log file changed during cleanup; original preserved. Retry when log writers are stopped.');
+        }
     }
 
     private function validatePermissions(array $logFiles): void
