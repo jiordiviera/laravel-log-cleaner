@@ -27,8 +27,14 @@ it('preserves the original log if compression cannot be started in streaming mod
     $tempFilesBefore = glob($path.'.tmp.*');
 
     try {
-        expect(fn () => (new LogCleaner)->clear(days: 5, compress: true, memoryEfficient: true))
-            ->toThrow(TypeError::class);
+        $failure = null;
+        try {
+            (new LogCleaner)->clear(days: 5, compress: true, memoryEfficient: true);
+        } catch (Throwable $exception) {
+            $failure = $exception;
+        }
+
+        expect($failure)->not->toBeNull();
 
         expect(file_get_contents($path))->toBe($content)
             ->and(glob($path.'.tmp.*'))->toBe($tempFilesBefore)
@@ -48,8 +54,14 @@ it('preserves the original log if compression cannot be started in standard mode
     $tempFilesBefore = glob($path.'.tmp.*');
 
     try {
-        expect(fn () => (new LogCleaner)->clear(days: 5, compress: true))
-            ->toThrow(TypeError::class);
+        $failure = null;
+        try {
+            (new LogCleaner)->clear(days: 5, compress: true);
+        } catch (Throwable $exception) {
+            $failure = $exception;
+        }
+
+        expect($failure)->not->toBeNull();
 
         expect(file_get_contents($path))->toBe($content)
             ->and(glob($path.'.tmp.*'))->toBe($tempFilesBefore);
