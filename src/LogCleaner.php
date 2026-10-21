@@ -356,7 +356,14 @@ class LogCleaner
                 $compressedPath = $this->compressOldLogs($filePath, [$removedContent]);
             }
 
-            $this->replaceLogContent($filePath, $newContent);
+            try {
+                $this->replaceLogContent($filePath, $newContent);
+            } catch (\\Throwable $e) {
+                if (isset($compressedPath) && is_file($compressedPath)) {
+                    @unlink($compressedPath);
+                }
+                throw $e;
+            }
         }
 
         return [
@@ -643,11 +650,23 @@ class LogCleaner
             throw new RuntimeException('Failed to create compressed file: '.$compressedPath);
         }
 
-        foreach ($linesToCompress as $line) {
-            gzwrite($handle, $line);
-        }
+        try {
+            foreach ($linesToCompress as $line) {
+                $this->writeCompressed($handle, $line);
+            }
 
-        gzclose($handle);
+            $closed = gzclose($handle);
+            $handle = null;
+            if (! $closed) {
+                throw new RuntimeException('Failed to close compressed log archive');
+            }
+        } catch (\\Throwable $e) {
+            if ($handle !== null) {
+                gzclose($handle);
+            }
+            @unlink($compressedPath);
+            throw $e;
+        }
 
         return $compressedPath;
     }
