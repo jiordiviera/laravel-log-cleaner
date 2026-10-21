@@ -53,7 +53,6 @@ final class LogFileOperations
         }
     }
 
-
     /** @param resource $handle */
     public function writeAll($handle, string $content): void
     {
@@ -84,7 +83,6 @@ final class LogFileOperations
         }
     }
 
-
     /**
      * Detect writes or rotations observed during the streaming pass.
      * This is an optimistic guard, not a replacement for writer coordination:
@@ -108,6 +106,4 @@ final class LogFileOperations
             throw new RuntimeException('Log file changed during cleanup; original preserved. Retry when log writers are stopped.');
         }
     }
-
-
 }
