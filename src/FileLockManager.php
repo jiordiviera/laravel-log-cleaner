@@ -53,5 +53,4 @@ final class FileLockManager
         flock($handle, LOCK_UN);
         fclose($handle);
     }
-
 }
