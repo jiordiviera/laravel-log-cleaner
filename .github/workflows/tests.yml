@@ -41,22 +41,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
+          key: ${{ runner.os }}-composer-${{ matrix.php }}-laravel-${{ matrix.laravel }}-${{ hashFiles('composer.json') }}
+          restore-keys: ${{ runner.os }}-composer-${{ matrix.php }}-laravel-${{ matrix.laravel }}-
 
       - name: Install dependencies
         run: |
           composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update
           composer update --prefer-dist --no-interaction --no-progress --optimize-autoloader
-
-      - name: Install Larastan (conditional)
-        run: |
-          if [[ "${{ matrix.laravel }}" == "10.*" ]]; then
-            composer require --dev larastan/larastan:^2.0 --no-interaction --no-update
-          elif [[ "${{ matrix.laravel }}" == "11.*" || "${{ matrix.laravel }}" == "12.*" ]]; then
-            composer require --dev larastan/larastan:^3.0 --no-interaction --no-update
-          fi
-          composer update --prefer-dist --no-interaction --no-progress --optimize-autoloader || true
 
       - name: Run Package Tests
         run: vendor/bin/pest
@@ -84,8 +75,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
+          key: ${{ runner.os }}-composer-8.3-laravel-13-${{ hashFiles('composer.json') }}
+          restore-keys: ${{ runner.os }}-composer-8.3-laravel-13-
 
       - name: Install dependencies
         run: |
@@ -119,16 +110,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
+          key: ${{ runner.os }}-composer-quality-${{ hashFiles('composer.json', 'composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-quality-
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress --optimize-autoloader
-
-      - name: Install Larastan
-        run: |
-          composer require --dev larastan/larastan:^3.0 --no-interaction --no-update || true
-          composer update --prefer-dist --no-interaction --no-progress --optimize-autoloader || true
 
       - name: Run Laravel Pint
         run: composer lint
