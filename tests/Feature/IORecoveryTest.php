@@ -27,7 +27,7 @@ it('preserves the original log if compression cannot be started in streaming mod
 
     try {
         expect(fn () => (new LogCleaner)->clear(days: 5, compress: true, memoryEfficient: true))
-            ->toThrow(\\RuntimeException::class);
+            ->toThrow(\RuntimeException::class);
 
         expect(file_get_contents($path))->toBe($content)
             ->and(glob($path.'.tmp.*'))->toBeEmpty()
@@ -47,7 +47,7 @@ it('preserves the original log if compression cannot be started in standard mode
 
     try {
         expect(fn () => (new LogCleaner)->clear(days: 5, compress: true))
-            ->toThrow(\\Throwable::class);
+            ->toThrow(\Throwable::class);
 
         expect(file_get_contents($path))->toBe($content)
             ->and(glob($path.'.tmp.*'))->toBeEmpty();
