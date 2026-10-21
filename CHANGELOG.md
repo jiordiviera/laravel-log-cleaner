@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v2.3 development
+- Continued non-breaking internal refactoring: backup creation, disk-space validation and retention are delegated to `LogBackupManager`.
+- Added focused backup operation regression tests.
+- The next planned minor release is **2.3.0**; no release has been tagged by this change.
+
 ### Changed
 - Aligned documented current support with Composer: PHP 8.2+ and Laravel 10–13 (Laravel 13 requires PHP 8.3+).
 - Clarified the CI compatibility matrix, PHPStan level 4, and contributor command (`composer analyse`).
