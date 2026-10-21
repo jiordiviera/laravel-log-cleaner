@@ -438,12 +438,14 @@ class LogCleaner
         clearstatcache(true, $filePath);
         $currentStat = stat($filePath);
 
-        if ($currentStat === false
+        if (
+            $currentStat === false
             || $currentStat['dev'] !== $originalStat['dev']
             || $currentStat['ino'] !== $originalStat['ino']
             || $currentStat['size'] !== $originalStat['size']
             || $currentStat['mtime'] !== $originalStat['mtime']
-            || $currentStat['ctime'] !== $originalStat['ctime']) {
+            || $currentStat['ctime'] !== $originalStat['ctime']
+        ) {
             throw new RuntimeException('Log file changed during cleanup; original preserved. Retry when log writers are stopped.');
         }
     }
