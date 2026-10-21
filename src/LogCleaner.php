@@ -244,7 +244,7 @@ class LogCleaner
         }
 
         if (! $dryRun) {
-            File::put($filePath, '');
+            $this->replaceLogContent($filePath, '');
         }
 
         return [
@@ -356,7 +356,7 @@ class LogCleaner
                 $compressedPath = $this->compressOldLogs($filePath, [$removedContent]);
             }
 
-            File::put($filePath, $newContent);
+            $this->replaceLogContent($filePath, $newContent);
         }
 
         return [
@@ -431,11 +431,14 @@ class LogCleaner
                 throw new RuntimeException('Failed to read complete log file');
             }
 
-            if ($outputHandle !== null && (! fflush($outputHandle) || ! fclose($outputHandle))) {
+            if ($outputHandle !== null) {
+                $flushed = fflush($outputHandle);
+                $closed = fclose($outputHandle);
                 $outputHandle = null;
-                throw new RuntimeException('Failed to flush or close temporary log file');
+                if (! $flushed || ! $closed) {
+                    throw new RuntimeException('Failed to flush or close temporary log file');
+                }
             }
-            $outputHandle = null;
 
             if ($compressHandle !== null) {
                 if (! gzclose($compressHandle)) {
@@ -473,6 +476,48 @@ class LogCleaner
                 gzclose($compressHandle);
             }
             if ($tempFile !== null && is_file($tempFile)) {
+                @unlink($tempFile);
+            }
+        }
+    }
+
+    private function replaceLogContent(string $filePath, string $content): void
+    {
+        clearstatcache(true, $filePath);
+        $originalStat = stat($filePath);
+        if ($originalStat === false) {
+            throw new RuntimeException('Unable to stat log file before cleaning');
+        }
+
+        $tempFile = tempnam(dirname($filePath), basename($filePath).'.tmp.');
+        if ($tempFile === false) {
+            throw new RuntimeException('Unable to create temporary log file');
+        }
+
+        $handle = null;
+        try {
+            $handle = @fopen($tempFile, 'wb');
+            if ($handle === false) {
+                throw new RuntimeException('Unable to open temporary log file');
+            }
+
+            $this->writeAll($handle, $content);
+            $flushed = fflush($handle);
+            $closed = fclose($handle);
+            $handle = null;
+            if (! $flushed || ! $closed) {
+                throw new RuntimeException('Failed to flush temporary log file');
+            }
+
+            $this->assertLogFileUnchanged($filePath, $originalStat);
+            if (! rename($tempFile, $filePath)) {
+                throw new RuntimeException('Failed to replace original file with cleaned version');
+            }
+        } finally {
+            if (is_resource($handle)) {
+                fclose($handle);
+            }
+            if (is_file($tempFile)) {
                 @unlink($tempFile);
             }
         }
