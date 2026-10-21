@@ -24,7 +24,7 @@ it('rejects a failed plain write without changing an existing log', function () 
         fclose($stream);
 
         expect(fn () => (new LogFileOperations)->writeAll($stream, str_repeat('x', 4096)))
-            ->toThrow(RuntimeException::class);
+            ->toThrow(TypeError::class);
         expect(file_get_contents($path))->toBe($original);
     } finally {
         if (is_resource($stream)) {
