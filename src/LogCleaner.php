@@ -56,6 +56,9 @@ class LogCleaner
 
     private ?OutputStyle $output = null;
 
+    /** @var array<string, resource> */
+    private array $lockHandles = [];
+
     /** @var array<int, array{file: string, lines_removed: int, bytes_freed: int, backup_path: string|null, compressed_path: string|null}> */
     private array $cleaningResults = [];
 
@@ -137,7 +140,8 @@ class LogCleaner
                 $this->acquireLock($filePath);
             }
 
-            $this->validatePermissions([$logFile]);
+            try {
+                $this->validatePermissions([$logFile]);
 
             $linesRemoved = 0;
             $bytesFreed = 0;
@@ -168,8 +172,7 @@ class LogCleaner
                 $compressedPath = $result['compressed_path'] ?? null;
             }
 
-            // Release lock
-            if (Config::get('log-cleaner.locking.enabled', true) && ! $dryRun) {
+            } finally {
                 $this->releaseLock($filePath);
             }
 
@@ -664,24 +667,38 @@ class LogCleaner
     {
         $lockFile = $filePath.'.lock';
         $timeout = Config::get('log-cleaner.locking.timeout', 30);
-        $startTime = time();
-
-        while (file_exists($lockFile)) {
-            if (time() - $startTime >= $timeout) {
-                throw FileLockException::timeout($filePath, $timeout);
-            }
-            usleep(100000); // Wait 100ms
+        $handle = fopen($lockFile, 'c');
+        if ($handle === false) {
+            throw new RuntimeException('Unable to open log lock file');
         }
 
-        file_put_contents($lockFile, getmypid());
+        $startTime = microtime(true);
+        do {
+            if (flock($handle, LOCK_EX | LOCK_NB)) {
+                $this->lockHandles[$filePath] = $handle;
+
+                return;
+            }
+
+            if (microtime(true) - $startTime >= $timeout) {
+                fclose($handle);
+                throw FileLockException::timeout($filePath, $timeout);
+            }
+
+            usleep(100000);
+        } while (true);
     }
 
     private function releaseLock(string $filePath): void
     {
-        $lockFile = $filePath.'.lock';
-        if (file_exists($lockFile)) {
-            unlink($lockFile);
+        if (! isset($this->lockHandles[$filePath])) {
+            return;
         }
+
+        $handle = $this->lockHandles[$filePath];
+        unset($this->lockHandles[$filePath]);
+        flock($handle, LOCK_UN);
+        fclose($handle);
     }
 
     private function cleanupOldBackups($file): void
