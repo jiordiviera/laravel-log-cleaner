@@ -55,6 +55,8 @@ class LogCleaner
 
     private LogBackupManager $backupManager;
 
+    private LogCompressionManager $compressionManager;
+
     private ?OutputStyle $output = null;
 
     /** @var array<int, array{file: string, lines_removed: int, bytes_freed: int, backup_path: string|null, compressed_path: string|null}> */
@@ -65,6 +67,7 @@ class LogCleaner
         $this->fileOperations = new LogFileOperations;
         $this->lockManager = new FileLockManager;
         $this->backupManager = new LogBackupManager;
+        $this->compressionManager = new LogCompressionManager($this->fileOperations);
     }
 
     public function setOutput(OutputStyle $output): self
@@ -513,37 +516,7 @@ class LogCleaner
 
     private function compressOldLogs(string $filePath, array $linesToCompress): ?string
     {
-        if (empty($linesToCompress)) {
-            return null;
-        }
-
-        $compressedPath = $filePath.'.old.'.date('Y-m-d-H-i-s').'.gz';
-        $compressionLevel = Config::get('log-cleaner.compression.level', 9);
-        $handle = gzopen($compressedPath, 'w'.$compressionLevel);
-
-        if (! $handle) {
-            throw new RuntimeException('Failed to create compressed file: '.$compressedPath);
-        }
-
-        try {
-            foreach ($linesToCompress as $line) {
-                $this->writeCompressed($handle, $line);
-            }
-
-            $closed = gzclose($handle);
-            $handle = null;
-            if (! $closed) {
-                throw new RuntimeException('Failed to close compressed log archive');
-            }
-        } catch (\Throwable $e) {
-            if ($handle !== null) {
-                gzclose($handle);
-            }
-            @unlink($compressedPath);
-            throw $e;
-        }
-
-        return $compressedPath;
+        return $this->compressionManager->compressOldLogs($filePath, $linesToCompress);
     }
 
     public function dryRun(int $days = 0, ?string $file = null, ?string $level = null, ?string $pattern = null): array
