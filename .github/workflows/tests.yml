@@ -131,10 +131,7 @@ jobs:
           composer update --prefer-dist --no-interaction --no-progress --optimize-autoloader || true
 
       - name: Run Laravel Pint
-        run: |
-          vendor/bin/pint src/LogCleaner.php
-          git diff -- src/LogCleaner.php
-          git diff --exit-code -- src/LogCleaner.php
+        run: composer lint
 
       - name: Run PHPStan
         run: composer analyse
