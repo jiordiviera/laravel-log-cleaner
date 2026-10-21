@@ -12,9 +12,7 @@ use RuntimeException;
  */
 final class LogCompressionManager
 {
-    public function __construct(private LogFileOperations $fileOperations = new LogFileOperations)
-    {
-    }
+    public function __construct(private LogFileOperations $fileOperations = new LogFileOperations) {}
 
     public function compressOldLogs(string $filePath, array $linesToCompress): ?string
     {
