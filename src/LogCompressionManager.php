@@ -50,5 +50,4 @@ final class LogCompressionManager
 
         return $compressedPath;
     }
-
 }
