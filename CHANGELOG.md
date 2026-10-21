@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### v2.3 development
+- Extracted checked gzip archive creation into `LogCompressionManager` with focused archive regression tests, keeping the existing v2 API.
 - Continued non-breaking internal refactoring: backup creation, disk-space validation and retention are delegated to `LogBackupManager`.
 - Added focused backup operation regression tests.
 - The next planned minor release is **2.3.0**; no release has been tagged by this change.
