@@ -227,12 +227,25 @@ class LogCleaner
         $filePath = $file->getPathname();
         $bytes = filesize($filePath);
 
+        $lines = 0;
+        $handle = fopen($filePath, 'rb');
+        if ($handle === false) {
+            throw new RuntimeException('Unable to read log file for line counting');
+        }
+        try {
+            while (fgets($handle) !== false) {
+                $lines++;
+            }
+        } finally {
+            fclose($handle);
+        }
+
         if (! $dryRun) {
             File::put($filePath, '');
         }
 
         return [
-            'lines' => count(file($filePath, FILE_IGNORE_NEW_LINES)),
+            'lines' => $lines,
             'bytes' => $bytes,
         ];
     }
@@ -313,7 +326,7 @@ class LogCleaner
         $lines = explode(PHP_EOL, $content);
         $newLines = $this->filterOldLogs($lines, $cutoffDate, $level);
 
-        $linesToRemove = array_diff($lines, $newLines);
+        $linesToRemove = array_filter($lines, fn ($line) => ! $this->shouldKeepLine($line, $cutoffDate, $level));
         $linesRemoved = count($linesToRemove);
         $bytesFreed = array_sum(array_map('strlen', $linesToRemove));
 
@@ -344,9 +357,9 @@ class LogCleaner
         }
 
         $inputHandle = fopen($filePath, 'r');
-        $outputHandle = fopen($tempFile, 'w');
+        $outputHandle = $dryRun ? null : fopen($tempFile, 'w');
 
-        if (! $inputHandle || ! $outputHandle) {
+        if (! $inputHandle || (! $dryRun && ! $outputHandle)) {
             throw new RuntimeException('Unable to open file handles for processing');
         }
 
@@ -358,10 +371,12 @@ class LogCleaner
             $line = rtrim($line, "\r\n");
 
             if ($this->shouldKeepLine($line, $cutoffDate, $level)) {
-                if (! $firstLine) {
-                    fwrite($outputHandle, PHP_EOL);
+                if (! $dryRun) {
+                    if (! $firstLine) {
+                        fwrite($outputHandle, PHP_EOL);
+                    }
+                    fwrite($outputHandle, $line);
                 }
-                fwrite($outputHandle, $line);
                 $firstLine = false;
             } else {
                 $linesRemoved++;
@@ -374,7 +389,9 @@ class LogCleaner
         }
 
         fclose($inputHandle);
-        fclose($outputHandle);
+        if ($outputHandle) {
+            fclose($outputHandle);
+        }
 
         if ($compressHandle) {
             gzclose($compressHandle);
@@ -385,8 +402,6 @@ class LogCleaner
                 unlink($tempFile);
                 throw new RuntimeException('Failed to replace original file with cleaned version');
             }
-        } else {
-            unlink($tempFile);
         }
 
         return [
