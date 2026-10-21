@@ -272,11 +272,15 @@ class LogCleaner
         return $this->clearOldLogsStandard($filePath, $cutoffDate, $compress, $level, $dryRun);
     }
 
-    private function filterOldLogs(array $lines, Carbon $cutoffDate, ?string $level): array
+    private function isLogRecordStart(string $line): bool
     {
-        return array_filter($lines, function ($line) use ($cutoffDate, $level) {
-            return $this->shouldKeepLine($line, $cutoffDate, $level);
-        });
+        foreach ($this->compiledPatterns as $pattern => $format) {
+            if (preg_match($pattern, $line)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function shouldKeepLine(string $line, Carbon $cutoffDate, ?string $level): bool
@@ -324,9 +328,22 @@ class LogCleaner
     {
         $content = File::get($filePath);
         $lines = explode(PHP_EOL, $content);
-        $newLines = $this->filterOldLogs($lines, $cutoffDate, $level);
+        $newLines = [];
+        $linesToRemove = [];
+        $keepRecord = true;
 
-        $linesToRemove = array_filter($lines, fn ($line) => ! $this->shouldKeepLine($line, $cutoffDate, $level));
+        foreach ($lines as $line) {
+            if ($this->isLogRecordStart($line)) {
+                $keepRecord = $this->shouldKeepLine($line, $cutoffDate, $level);
+            }
+
+            if ($keepRecord) {
+                $newLines[] = $line;
+            } else {
+                $linesToRemove[] = $line;
+            }
+        }
+
         $linesRemoved = count($linesToRemove);
         $bytesFreed = array_sum(array_map('strlen', $linesToRemove));
 
@@ -371,27 +388,25 @@ class LogCleaner
             throw new RuntimeException('Unable to open file handles for processing');
         }
 
-        $firstLine = true;
         $linesRemoved = 0;
         $bytesFreed = 0;
+        $keepRecord = true;
 
         while (($line = fgets($inputHandle)) !== false) {
-            $line = rtrim($line, "\r\n");
+            if ($this->isLogRecordStart($line)) {
+                $keepRecord = $this->shouldKeepLine($line, $cutoffDate, $level);
+            }
 
-            if ($this->shouldKeepLine($line, $cutoffDate, $level)) {
-                if (! $dryRun) {
-                    if (! $firstLine) {
-                        fwrite($outputHandle, PHP_EOL);
-                    }
-                    fwrite($outputHandle, $line);
+            if ($keepRecord) {
+                if ($outputHandle && fwrite($outputHandle, $line) === false) {
+                    throw new RuntimeException('Failed to write cleaned log content');
                 }
-                $firstLine = false;
             } else {
                 $linesRemoved++;
-                $bytesFreed += strlen($line);
+                $bytesFreed += strlen(rtrim($line, "\r\n"));
 
                 if ($compressHandle) {
-                    gzwrite($compressHandle, $line.PHP_EOL);
+                    gzwrite($compressHandle, $line);
                 }
             }
         }
