@@ -358,7 +358,7 @@ class LogCleaner
 
             try {
                 $this->replaceLogContent($filePath, $newContent);
-            } catch (\\Throwable $e) {
+            } catch (\Throwable $e) {
                 if (isset($compressedPath) && is_file($compressedPath)) {
                     @unlink($compressedPath);
                 }
@@ -468,7 +468,7 @@ class LogCleaner
                 'bytes' => $bytesFreed,
                 'compressed_path' => $compressedPath,
             ];
-        } catch (\\Throwable $e) {
+        } catch (\Throwable $e) {
             if ($compressedPath !== null && is_file($compressedPath)) {
                 @unlink($compressedPath);
             }
@@ -660,7 +660,7 @@ class LogCleaner
             if (! $closed) {
                 throw new RuntimeException('Failed to close compressed log archive');
             }
-        } catch (\\Throwable $e) {
+        } catch (\Throwable $e) {
             if ($handle !== null) {
                 gzclose($handle);
             }
