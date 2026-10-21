@@ -275,24 +275,6 @@ class LogCleaner
         return $this->clearOldLogsStandard($filePath, $cutoffDate, $compress, $level, $dryRun);
     }
 
-    private function filterOldLogs(array $lines, Carbon $cutoffDate, ?string $level): array
-    {
-        $kept = [];
-        $keepRecord = true;
-
-        foreach ($lines as $line) {
-            if ($this->isLogRecordStart($line)) {
-                $keepRecord = $this->shouldKeepLine($line, $cutoffDate, $level);
-            }
-
-            if ($keepRecord) {
-                $kept[] = $line;
-            }
-        }
-
-        return $kept;
-    }
-
     private function isLogRecordStart(string $line): bool
     {
         foreach ($this->compiledPatterns as $pattern => $format) {
@@ -370,7 +352,7 @@ class LogCleaner
         $bytesFreed = strlen($removedContent);
 
         if (! $dryRun) {
-            if ($compress) {
+            if ($compress && $removedContent !== '') {
                 $compressedPath = $this->compressOldLogs($filePath, [$removedContent]);
             }
 
