@@ -15,19 +15,45 @@ afterEach(function () {
     $this->cleanupLogFiles();
 });
 
-it('preserves the original log when a streaming temporary file cannot be created', function () {
+it('preserves the original log if compression cannot be started in streaming mode', function () {
     $old = now()->subDays(10)->format('Y-m-d');
     $content = "[{$old}] production.ERROR: old entry\n";
     $this->createTestLogFile('laravel.log', $content);
     $path = storage_path('logs/laravel.log');
 
-    // A directory with this name cannot be replaced by a temporary regular file.
-    // Force an invalid temp directory via a non-writable directory where supported.
-    $before = file_get_contents($path);
-    (new LogCleaner)->clear(days: 5, memoryEfficient: true);
-    expect($before)->toBe($content)
-        ->and(file_get_contents($path))->toBe('');
-    expect(glob($path.'.tmp.*'))->toBeEmpty();
+    // An existing directory at the archive destination makes gzopen fail.
+    $archivePath = $path.'.old.'.date('Y-m-d-H-i-s').'.gz';
+    mkdir($archivePath);
+
+    try {
+        expect(fn () => (new LogCleaner)->clear(days: 5, compress: true, memoryEfficient: true))
+            ->toThrow(\\RuntimeException::class);
+
+        expect(file_get_contents($path))->toBe($content)
+            ->and(glob($path.'.tmp.*'))->toBeEmpty()
+            ->and(is_dir($archivePath))->toBeTrue();
+    } finally {
+        rmdir($archivePath);
+    }
+});
+
+it('preserves the original log if compression cannot be started in standard mode', function () {
+    $old = now()->subDays(10)->format('Y-m-d');
+    $content = "[{$old}] production.ERROR: old entry\n";
+    $this->createTestLogFile('laravel.log', $content);
+    $path = storage_path('logs/laravel.log');
+    $archivePath = $path.'.old.'.date('Y-m-d-H-i-s').'.gz';
+    mkdir($archivePath);
+
+    try {
+        expect(fn () => (new LogCleaner)->clear(days: 5, compress: true))
+            ->toThrow(\\Throwable::class);
+
+        expect(file_get_contents($path))->toBe($content)
+            ->and(glob($path.'.tmp.*'))->toBeEmpty();
+    } finally {
+        rmdir($archivePath);
+    }
 });
 
 it('does not leave a compressed archive when there are no expired records', function () {
