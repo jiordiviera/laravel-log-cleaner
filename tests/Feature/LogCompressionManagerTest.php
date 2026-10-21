@@ -46,8 +46,14 @@ it('preserves the log if the archive path cannot be opened', function () {
     mkdir($archive);
 
     try {
-        expect(fn () => (new LogCompressionManager)->compressOldLogs($path, ["expired\n"]))
-            ->toThrow(Throwable::class);
+        $failure = null;
+        try {
+            (new LogCompressionManager)->compressOldLogs($path, ["expired\n"]);
+        } catch (Throwable $e) {
+            $failure = $e;
+        }
+
+        expect($failure)->not->toBeNull();
         expect(file_get_contents($path))->toBe("original\n")
             ->and(is_dir($archive))->toBeTrue();
     } finally {
