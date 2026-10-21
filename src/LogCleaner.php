@@ -17,7 +17,6 @@ use JiordiViera\LaravelLogCleaner\Exceptions\DiskSpaceException;
 use JiordiViera\LaravelLogCleaner\Exceptions\FileLockException;
 use JiordiViera\LaravelLogCleaner\Exceptions\InvalidDaysException;
 use JiordiViera\LaravelLogCleaner\Exceptions\InvalidLogLevelException;
-use JiordiViera\LaravelLogCleaner\Exceptions\InvalidPatternException;
 use JiordiViera\LaravelLogCleaner\Exceptions\NoLogFilesException;
 use JiordiViera\LaravelLogCleaner\Exceptions\PermissionException;
 use JiordiViera\LaravelLogCleaner\Exceptions\ZlibException;
@@ -51,8 +50,7 @@ class LogCleaner
         '/^(\d{4}-\d{2}-\d{2})/',
     ];
 
-    /** @var array<string, string> */
-    private array $compiledPatterns = [];
+    private LogRecordFilter $recordFilter;
 
     private ?OutputStyle $output = null;
 
@@ -110,7 +108,7 @@ class LogCleaner
         $eventsEnabled = Config::get('log-cleaner.events.enabled', true);
 
         $this->validateDays($days);
-        $this->compilePatterns($pattern);
+        $this->recordFilter = new LogRecordFilter($pattern);
         $this->validateLogLevel($level);
         $this->validateZlibExtension($compress);
 
@@ -275,58 +273,6 @@ class LogCleaner
         return $this->clearOldLogsStandard($filePath, $cutoffDate, $compress, $level, $dryRun);
     }
 
-    private function isLogRecordStart(string $line): bool
-    {
-        foreach ($this->compiledPatterns as $pattern => $format) {
-            if (preg_match($pattern, $line)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function shouldKeepLine(string $line, Carbon $cutoffDate, ?string $level): bool
-    {
-        if (! $this->shouldKeepLineByLevel($line, $level)) {
-            return false;
-        }
-
-        if ($level && $cutoffDate->isToday()) {
-            return true;
-        }
-
-        foreach ($this->compiledPatterns as $pattern => $format) {
-            if (preg_match($pattern, $line, $matches)) {
-                try {
-                    $logDate = Carbon::createFromFormat($format, $matches[1])->startOfDay();
-
-                    return $logDate->greaterThanOrEqualTo($cutoffDate);
-                } catch (\Exception $e) {
-                    continue;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    private function compilePatterns(?string $customPattern): void
-    {
-        if ($customPattern) {
-            if (@preg_match($customPattern, '') === false) {
-                throw InvalidPatternException::create(preg_last_error_msg());
-            }
-            $this->compiledPatterns = [$customPattern => 'Y-m-d'];
-        } else {
-            $this->compiledPatterns = [
-                '/^\[(\d{4}-\d{2}-\d{2})/' => 'Y-m-d',
-                '/^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/' => 'Y-m-d H:i:s',
-                '/^(\d{4}-\d{2}-\d{2})/' => 'Y-m-d',
-            ];
-        }
-    }
-
     private function clearOldLogsStandard(string $filePath, Carbon $cutoffDate, bool $compress, ?string $level, bool $dryRun): array
     {
         $content = File::get($filePath);
@@ -337,8 +283,8 @@ class LogCleaner
         $keepRecord = true;
 
         foreach ($lines as $line) {
-            if ($this->isLogRecordStart($line)) {
-                $keepRecord = $this->shouldKeepLine($line, $cutoffDate, $level);
+            if ($this->recordFilter->isRecordStart($line)) {
+                $keepRecord = $this->recordFilter->shouldKeep($line, $cutoffDate, $level);
             }
 
             if ($keepRecord) {
@@ -408,8 +354,8 @@ class LogCleaner
             }
 
             while (($line = fgets($inputHandle)) !== false) {
-                if ($this->isLogRecordStart($line)) {
-                    $keepRecord = $this->shouldKeepLine($line, $cutoffDate, $level);
+                if ($this->recordFilter->isRecordStart($line)) {
+                    $keepRecord = $this->recordFilter->shouldKeep($line, $cutoffDate, $level);
                 }
 
                 if ($keepRecord) {
@@ -634,21 +580,6 @@ class LogCleaner
         }
     }
 
-    private function shouldKeepLineByLevel(string $line, ?string $filterLevel): bool
-    {
-        if (! $filterLevel) {
-            return true;
-        }
-
-        foreach (self::LOG_LEVELS as $level) {
-            if (preg_match('/\.'.$level.':/', $line)) {
-                return strtoupper($filterLevel) === $level;
-            }
-        }
-
-        return true;
-    }
-
     private function compressOldLogs(string $filePath, array $linesToCompress): ?string
     {
         if (empty($linesToCompress)) {
@@ -688,7 +619,7 @@ class LogCleaner
     {
         $logDir = $this->getLogDirectory();
         $this->validateDays($days);
-        $this->compilePatterns($pattern);
+        $this->recordFilter = new LogRecordFilter($pattern);
         $this->validateLogLevel($level);
 
         $logFiles = $this->getLogFiles($logDir, $file);
@@ -714,8 +645,8 @@ class LogCleaner
                 $keepRecord = true;
 
                 foreach ($lines as $line) {
-                    if ($this->isLogRecordStart($line)) {
-                        $keepRecord = $this->shouldKeepLine($line, $cutoffDate, $level);
+                    if ($this->recordFilter->isRecordStart($line)) {
+                        $keepRecord = $this->recordFilter->shouldKeep($line, $cutoffDate, $level);
                     }
 
                     if (! $keepRecord) {
@@ -748,8 +679,8 @@ class LogCleaner
 
         $keepRecord = true;
         while (($line = fgets($inputHandle)) !== false) {
-            if ($this->isLogRecordStart($line)) {
-                $keepRecord = $this->shouldKeepLine($line, $cutoffDate, $level);
+            if ($this->recordFilter->isRecordStart($line)) {
+                $keepRecord = $this->recordFilter->shouldKeep($line, $cutoffDate, $level);
             }
 
             if (! $keepRecord) {
