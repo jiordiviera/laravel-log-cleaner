@@ -14,7 +14,6 @@ use JiordiViera\LaravelLogCleaner\Events\LogCleaning;
 use JiordiViera\LaravelLogCleaner\Events\LogFileCleaned;
 use JiordiViera\LaravelLogCleaner\Exceptions\BackupException;
 use JiordiViera\LaravelLogCleaner\Exceptions\DiskSpaceException;
-use JiordiViera\LaravelLogCleaner\Exceptions\FileLockException;
 use JiordiViera\LaravelLogCleaner\Exceptions\InvalidDaysException;
 use JiordiViera\LaravelLogCleaner\Exceptions\InvalidLogLevelException;
 use JiordiViera\LaravelLogCleaner\Exceptions\NoLogFilesException;
@@ -54,15 +53,16 @@ class LogCleaner
 
     private LogFileOperations $fileOperations;
 
+    private FileLockManager $lockManager;
+
     public function __construct()
     {
         $this->fileOperations = new LogFileOperations;
+        $this->lockManager = new FileLockManager;
     }
 
     private ?OutputStyle $output = null;
 
-    /** @var array<string, resource> */
-    private array $lockHandles = [];
 
     /** @var array<int, array{file: string, lines_removed: int, bytes_freed: int, backup_path: string|null, compressed_path: string|null}> */
     private array $cleaningResults = [];
@@ -672,40 +672,12 @@ class LogCleaner
 
     private function acquireLock(string $filePath): void
     {
-        $lockFile = $filePath.'.lock';
-        $timeout = Config::get('log-cleaner.locking.timeout', 30);
-        $handle = fopen($lockFile, 'c');
-        if ($handle === false) {
-            throw new RuntimeException('Unable to open log lock file');
-        }
-
-        $startTime = microtime(true);
-        do {
-            if (flock($handle, LOCK_EX | LOCK_NB)) {
-                $this->lockHandles[$filePath] = $handle;
-
-                return;
-            }
-
-            if (microtime(true) - $startTime >= $timeout) {
-                fclose($handle);
-                throw FileLockException::timeout($filePath, $timeout);
-            }
-
-            usleep(100000);
-        } while (true);
+        $this->lockManager->acquire($filePath);
     }
 
     private function releaseLock(string $filePath): void
     {
-        if (! isset($this->lockHandles[$filePath])) {
-            return;
-        }
-
-        $handle = $this->lockHandles[$filePath];
-        unset($this->lockHandles[$filePath]);
-        flock($handle, LOCK_UN);
-        fclose($handle);
+        $this->lockManager->release($filePath);
     }
 
     private function cleanupOldBackups($file): void
