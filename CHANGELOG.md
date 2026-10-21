@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Aligned documented current support with Composer: PHP 8.2+ and Laravel 10–13 (Laravel 13 requires PHP 8.3+).
+- Clarified the CI compatibility matrix, PHPStan level 4, and contributor command (`composer analyse`).
+- Documented concurrent-writer, date-parsing, disk-space and release-status limitations.
+
+### Notes
+- The changes listed under Unreleased describe the repository's current development state; they do not imply a new version has been tagged or published.
+
 ## [2.2.0] - 2026-03-27
 
 ### Added
