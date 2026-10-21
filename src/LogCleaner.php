@@ -416,7 +416,7 @@ class LogCleaner
      * This is an optimistic guard, not a replacement for writer coordination:
      * an append between the final stat and rename is still possible.
      *
-     * @param  array<string|int, mixed>  $originalStat
+     * @param array<string|int, mixed> $originalStat
      */
     private function assertLogFileUnchanged(string $filePath, array $originalStat): void
     {
