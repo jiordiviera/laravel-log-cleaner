@@ -400,7 +400,7 @@ For contributors:
    composer analyse
    ```
 
-## What's New in v2.1
+## Highlights of v2.2
 
 ### 🎯 Configuration System
 - **Publishable config file** - Customize defaults without code changes
