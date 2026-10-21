@@ -6,7 +6,7 @@
   <path d="M92 117h122M92 163h122M92 209h72" fill="none" stroke="#9CA3AF" stroke-width="12" stroke-linecap="round"/>
   <path d="m176 216 20 20 35-40" fill="none" stroke="#FB7185" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
   <text x="316" y="143" fill="#F9FAFB" font-family="Arial, Helvetica, sans-serif" font-size="64" font-weight="700" letter-spacing="-2">Laravel Log Cleaner</text>
-  <text x="319" y="197" fill="#CBD5E1" font-family="Arial, Helvetica, sans-serif" font-size="25">Clean, rotate and manage logs with confidence.</text>
+  <text x="319" y="197" fill="#CBD5E1" font-family="Arial, Helvetica, sans-serif" font-size="25">Clean and manage logs with confidence.</text>
   <rect x="318" y="230" width="158" height="42" rx="21" fill="#33252B"/>
   <text x="397" y="258" text-anchor="middle" fill="#FDA4AF" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700">LARAVEL</text>
   <rect x="490" y="230" width="105" height="42" rx="21" fill="#253242"/>
