@@ -475,15 +475,28 @@ class LogCleaner
 
             throw $e;
         } finally {
-            fclose($inputHandle);
-            if ($outputHandle !== null) {
-                fclose($outputHandle);
-            }
-            if ($compressHandle !== null) {
-                gzclose($compressHandle);
-            }
-            if ($tempFile !== null && is_file($tempFile)) {
-                @unlink($tempFile);
+            // Always remove the staging file, even when closing a stream fails.
+            // Laravel converts some PHP stream warnings into exceptions.
+            try {
+                if (is_resource($outputHandle)) {
+                    @fclose($outputHandle);
+                }
+            } finally {
+                try {
+                    if (is_resource($compressHandle)) {
+                        @gzclose($compressHandle);
+                    }
+                } finally {
+                    try {
+                        if (is_resource($inputHandle)) {
+                            @fclose($inputHandle);
+                        }
+                    } finally {
+                        if ($tempFile !== null && is_file($tempFile)) {
+                            @unlink($tempFile);
+                        }
+                    }
+                }
             }
         }
     }
