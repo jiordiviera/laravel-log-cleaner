@@ -50,7 +50,8 @@ php artisan vendor:publish --provider="JiordiViera\LaravelLogCleaner\LaravelLogC
 ### Version 2.2+ (Current)
 
 **PHP Requirements:**
-- PHP 8.2+ (Laravel 13 requires PHP 8.3+)
+- PHP 8.2+ for Laravel 10–12 (subject to the framework's own requirements)
+- PHP 8.3+ for Laravel 13
 
 **Laravel Support:**
 - Laravel 10.x
@@ -58,17 +59,13 @@ php artisan vendor:publish --provider="JiordiViera\LaravelLogCleaner\LaravelLogC
 - Laravel 12.x
 - Laravel 13.x ✨
 
-### Version 2.1 and below
+### Older releases
 
-For PHP 8.1:
-- Use version 2.1.x or below
-- Laravel 9.x to 12.x support
+For PHP 8.1 or Laravel 9, check the requirements of the specific older release on [Packagist](https://packagist.org/packages/jiordiviera/laravel-log-cleaner) before installing. Current versions do not support these combinations.
 
 ### Version 1.x (Legacy)
 
-For older PHP versions, use version 1.x:
-- PHP 7.0+ to 8.2
-- Laravel 7.x to 11.x
+If you must use an older PHP or Laravel release, inspect the historical Composer constraints and security status before choosing a 1.x version. This series is not covered by the current CI matrix.
 
 ```bash
 composer require jiordiviera/laravel-log-cleaner:^1.0
@@ -400,7 +397,7 @@ For contributors:
 
    ```bash
    ./vendor/bin/pest
-   composer phpstan
+   composer analyse
    ```
 
 ## What's New in v2.1
@@ -436,9 +433,21 @@ For contributors:
 - **Exception testing** - Comprehensive error coverage
 
 ### 📊 Code Quality
-- **PHPStan level 8** - Strict static analysis
+- **PHPStan level 4** - Static analysis (see `phpstan.neon`)
 - **Custom exceptions** - Type-safe error handling
 - **Better architecture** - Clean separation of concerns
+
+## Known Limitations
+
+- **Concurrent writers:** File locking coordinates participating cleanup processes, but external log writers must cooperate. Changes detected during cleanup abort the replacement where possible; writes racing with the final rename cannot be completely prevented.
+- **Retention:** Multiline continuations follow their preceding dated record. Lines without a recognized date may be retained rather than deleted.
+- **Compression:** Compressed archives require the PHP `zlib` extension and available disk space. Do not rely on archives as a substitute for off-host backups.
+- **Large files:** Streaming mode reduces PHP memory usage, but still requires space for a temporary file before atomically replacing the original.
+- **CI:** The test matrix covers PHP 8.2/8.3 with Laravel 10–12, plus PHP 8.3 with Laravel 13. Other combinations are not covered by the current CI workflow.
+
+## Release Notes
+
+See [CHANGELOG.md](CHANGELOG.md) for tagged release history and the `Unreleased` section for changes on `main`. A change merged into `main` is not necessarily included in the latest published Packagist version.
 
 ## About
 
@@ -450,6 +459,6 @@ The Laravel Log Cleaner is open-source software licensed under the [MIT License]
 
 ---
 
-> **Note:** This package requires PHP 8.1+ and Laravel 9.x or higher.
+> **Note:** The current package requires PHP 8.2+ and supports Laravel 10–13. Laravel 13 requires PHP 8.3+.
 
 For further information, visit the [GitHub repository](https://github.com/jiordiviera/laravel-log-cleaner).
