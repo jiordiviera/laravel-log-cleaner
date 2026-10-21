@@ -55,17 +55,16 @@ class LogCleaner
 
     private FileLockManager $lockManager;
 
+    private ?OutputStyle $output = null;
+
+    /** @var array<int, array{file: string, lines_removed: int, bytes_freed: int, backup_path: string|null, compressed_path: string|null}> */
+    private array $cleaningResults = [];
+
     public function __construct()
     {
         $this->fileOperations = new LogFileOperations;
         $this->lockManager = new FileLockManager;
     }
-
-    private ?OutputStyle $output = null;
-
-
-    /** @var array<int, array{file: string, lines_removed: int, bytes_freed: int, backup_path: string|null, compressed_path: string|null}> */
-    private array $cleaningResults = [];
 
     public function setOutput(OutputStyle $output): self
     {
