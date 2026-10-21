@@ -54,6 +54,11 @@ class LogCleaner
 
     private LogFileOperations $fileOperations;
 
+    public function __construct()
+    {
+        $this->fileOperations = new LogFileOperations;
+    }
+
     private ?OutputStyle $output = null;
 
     /** @var array<string, resource> */
@@ -99,7 +104,6 @@ class LogCleaner
         ?string $file = null,
         bool $dryRun = false
     ): void {
-        $this->fileOperations ??= new LogFileOperations;
         $logDir = $this->getLogDirectory();
 
         // Load config defaults
