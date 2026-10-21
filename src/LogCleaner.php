@@ -121,7 +121,7 @@ class LogCleaner
         }
 
         // Dispatch starting event
-        if ($eventsEnabled) {
+        if ($eventsEnabled && ! $dryRun) {
             Event::dispatch(new LogCleaning($days, $backup, $compress, $level, $pattern, $memoryEfficient, $file, $dryRun));
         }
 
@@ -141,7 +141,7 @@ class LogCleaner
             }
 
             try {
-                $this->validatePermissions([$logFile]);
+                $this->validatePermissions([$logFile], $dryRun);
 
                 $linesRemoved = 0;
                 $bytesFreed = 0;
@@ -486,12 +486,12 @@ class LogCleaner
         }
     }
 
-    private function validatePermissions(array $logFiles): void
+    private function validatePermissions(array $logFiles, bool $readOnly = false): void
     {
         foreach ($logFiles as $file) {
             $filePath = $file->getPathname();
 
-            if (! is_readable($filePath) || ! is_writable($filePath)) {
+            if (! is_readable($filePath) || (! $readOnly && ! is_writable($filePath))) {
                 throw PermissionException::create($filePath);
             }
         }
