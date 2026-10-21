@@ -368,81 +368,144 @@ class LogCleaner
 
     private function clearOldLogsMemoryEfficient(string $filePath, Carbon $cutoffDate, bool $compress, ?string $level, bool $dryRun): array
     {
-        $tempFile = $filePath.'.tmp';
-        $compressHandle = null;
-        $compressedPath = null;
-
-        if ($compress && ! $dryRun) {
-            $compressedPath = $filePath.'.old.'.date('Y-m-d-H-i-s').'.gz';
-            $compressHandle = gzopen($compressedPath, 'w9');
-        }
-
-        // Capture the original file identity before streaming. If a writer changes
-        // the file during processing, do not replace it with a stale snapshot.
         clearstatcache(true, $filePath);
         $originalStat = stat($filePath);
         if ($originalStat === false) {
             throw new RuntimeException('Unable to stat log file before cleaning');
         }
 
-        $inputHandle = fopen($filePath, 'r');
-        $outputHandle = $dryRun ? null : fopen($tempFile, 'w');
-
-        if (! $inputHandle || (! $dryRun && ! $outputHandle)) {
-            throw new RuntimeException('Unable to open file handles for processing');
+        $inputHandle = @fopen($filePath, 'rb');
+        if ($inputHandle === false) {
+            throw new RuntimeException('Unable to open log file for reading');
         }
 
+        $tempFile = null;
+        $outputHandle = null;
+        $compressHandle = null;
+        $compressedPath = null;
         $linesRemoved = 0;
         $bytesFreed = 0;
         $keepRecord = true;
 
-        while (($line = fgets($inputHandle)) !== false) {
-            if ($this->isLogRecordStart($line)) {
-                $keepRecord = $this->shouldKeepLine($line, $cutoffDate, $level);
-            }
-
-            if ($keepRecord) {
-                if ($outputHandle && fwrite($outputHandle, $line) === false) {
-                    throw new RuntimeException('Failed to write cleaned log content');
+        try {
+            if (! $dryRun) {
+                $tempFile = tempnam(dirname($filePath), basename($filePath).'.tmp.');
+                if ($tempFile === false) {
+                    throw new RuntimeException('Unable to create temporary log file');
                 }
-            } else {
-                $linesRemoved++;
-                $bytesFreed += strlen($line);
 
-                if ($compressHandle) {
-                    gzwrite($compressHandle, $line);
+                $outputHandle = @fopen($tempFile, 'wb');
+                if ($outputHandle === false) {
+                    throw new RuntimeException('Unable to open temporary log file');
                 }
             }
-        }
 
-        fclose($inputHandle);
-        if ($outputHandle) {
-            fclose($outputHandle);
-        }
+            while (($line = fgets($inputHandle)) !== false) {
+                if ($this->isLogRecordStart($line)) {
+                    $keepRecord = $this->shouldKeepLine($line, $cutoffDate, $level);
+                }
 
-        if ($compressHandle) {
-            gzclose($compressHandle);
-        }
+                if ($keepRecord) {
+                    if ($outputHandle !== null) {
+                        $this->writeAll($outputHandle, $line);
+                    }
+                } else {
+                    $linesRemoved++;
+                    $bytesFreed += strlen($line);
 
-        if (! $dryRun) {
-            try {
+                    if ($compress && ! $dryRun) {
+                        if ($compressHandle === null) {
+                            $compressedPath = $filePath.'.old.'.date('Y-m-d-H-i-s').'.gz';
+                            $compressHandle = @gzopen($compressedPath, 'w9');
+                            if ($compressHandle === false) {
+                                throw new RuntimeException('Unable to create compressed log archive');
+                            }
+                        }
+
+                        $this->writeCompressed($compressHandle, $line);
+                    }
+                }
+            }
+
+            if (! feof($inputHandle)) {
+                throw new RuntimeException('Failed to read complete log file');
+            }
+
+            if ($outputHandle !== null && (! fflush($outputHandle) || ! fclose($outputHandle))) {
+                $outputHandle = null;
+                throw new RuntimeException('Failed to flush or close temporary log file');
+            }
+            $outputHandle = null;
+
+            if ($compressHandle !== null) {
+                if (! gzclose($compressHandle)) {
+                    $compressHandle = null;
+                    throw new RuntimeException('Failed to close compressed log archive');
+                }
+                $compressHandle = null;
+            }
+
+            if (! $dryRun) {
                 $this->assertLogFileUnchanged($filePath, $originalStat);
-            } catch (RuntimeException $e) {
-                unlink($tempFile);
-                throw $e;
+                if (! rename($tempFile, $filePath)) {
+                    throw new RuntimeException('Failed to replace original file with cleaned version');
+                }
+                $tempFile = null;
             }
 
-            if (! rename($tempFile, $filePath)) {
-                unlink($tempFile);
-                throw new RuntimeException('Failed to replace original file with cleaned version');
+            return [
+                'lines' => $linesRemoved,
+                'bytes' => $bytesFreed,
+                'compressed_path' => $compressedPath,
+            ];
+        } catch (\\Throwable $e) {
+            if ($compressedPath !== null && is_file($compressedPath)) {
+                @unlink($compressedPath);
+            }
+
+            throw $e;
+        } finally {
+            fclose($inputHandle);
+            if ($outputHandle !== null) {
+                fclose($outputHandle);
+            }
+            if ($compressHandle !== null) {
+                gzclose($compressHandle);
+            }
+            if ($tempFile !== null && is_file($tempFile)) {
+                @unlink($tempFile);
             }
         }
+    }
 
-        return [
-            'lines' => $linesRemoved,
-            'bytes' => $bytesFreed,
-            'compressed_path' => ($compress && ! $dryRun) ? $compressedPath : null,
-        ];
+    /** @param resource $handle */
+    private function writeAll($handle, string $content): void
+    {
+        $length = strlen($content);
+        $written = 0;
+
+        while ($written < $length) {
+            $count = @fwrite($handle, substr($content, $written));
+            if ($count === false || $count === 0) {
+                throw new RuntimeException('Failed to write complete cleaned log content');
+            }
+            $written += $count;
+        }
+    }
+
+    /** @param resource $handle */
+    private function writeCompressed($handle, string $content): void
+    {
+        $length = strlen($content);
+        $written = 0;
+
+        while ($written < $length) {
+            $count = @gzwrite($handle, substr($content, $written));
+            if ($count === false || $count === 0) {
+                throw new RuntimeException('Failed to write complete compressed log content');
+            }
+            $written += $count;
+        }
     }
 
     /**
