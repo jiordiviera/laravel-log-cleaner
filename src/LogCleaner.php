@@ -143,34 +143,34 @@ class LogCleaner
             try {
                 $this->validatePermissions([$logFile]);
 
-            $linesRemoved = 0;
-            $bytesFreed = 0;
-            $backupPath = null;
-            $compressedPath = null;
+                $linesRemoved = 0;
+                $bytesFreed = 0;
+                $backupPath = null;
+                $compressedPath = null;
 
-            if ($backup && ! $dryRun) {
-                $backupPath = $this->createBackup($logFile);
-                $this->cleanupOldBackups($logFile);
-            }
+                if ($backup && ! $dryRun) {
+                    $backupPath = $this->createBackup($logFile);
+                    $this->cleanupOldBackups($logFile);
+                }
 
-            if ($days === 0 && ! $level) {
-                $result = $this->clearAllLogs($logFile, $dryRun);
-                $linesRemoved = $result['lines'];
-                $bytesFreed = $result['bytes'];
-            } else {
-                $result = $this->clearOldLogs(
-                    $logFile,
-                    $days,
-                    $compress,
-                    $level,
-                    $memoryEfficient,
-                    $dryRun,
-                    $memoryThreshold
-                );
-                $linesRemoved = $result['lines'];
-                $bytesFreed = $result['bytes'];
-                $compressedPath = $result['compressed_path'] ?? null;
-            }
+                if ($days === 0 && ! $level) {
+                    $result = $this->clearAllLogs($logFile, $dryRun);
+                    $linesRemoved = $result['lines'];
+                    $bytesFreed = $result['bytes'];
+                } else {
+                    $result = $this->clearOldLogs(
+                        $logFile,
+                        $days,
+                        $compress,
+                        $level,
+                        $memoryEfficient,
+                        $dryRun,
+                        $memoryThreshold
+                    );
+                    $linesRemoved = $result['lines'];
+                    $bytesFreed = $result['bytes'];
+                    $compressedPath = $result['compressed_path'] ?? null;
+                }
 
             } finally {
                 $this->releaseLock($filePath);
