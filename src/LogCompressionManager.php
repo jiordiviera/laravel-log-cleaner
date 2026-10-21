@@ -26,7 +26,7 @@ final class LogCompressionManager
         $compressionLevel = Config::get('log-cleaner.compression.level', 9);
         $handle = gzopen($compressedPath, 'w'.$compressionLevel);
 
-        if (! $handle) {
+        if ($handle === false) {
             throw new RuntimeException('Failed to create compressed file: '.$compressedPath);
         }
 
@@ -37,7 +37,7 @@ final class LogCompressionManager
 
             $closed = gzclose($handle);
             $handle = null;
-            if (! $closed) {
+            if ($closed === false) {
                 throw new RuntimeException('Failed to close compressed log archive');
             }
         } catch (\Throwable $e) {
