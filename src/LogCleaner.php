@@ -371,7 +371,7 @@ class LogCleaner
 
         if (! $dryRun) {
             if ($compress) {
-                $compressedPath = $this->compressOldLogs($filePath, explode(PHP_EOL, $removedContent));
+                $compressedPath = $this->compressOldLogs($filePath, [$removedContent]);
             }
 
             File::put($filePath, $newContent);
@@ -554,7 +554,7 @@ class LogCleaner
         }
 
         foreach ($linesToCompress as $line) {
-            gzwrite($handle, $line.PHP_EOL);
+            gzwrite($handle, $line);
         }
 
         gzclose($handle);
