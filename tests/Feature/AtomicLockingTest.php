@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Config;
+use JiordiViera\LaravelLogCleaner\Exceptions\FileLockException;
 use JiordiViera\LaravelLogCleaner\LogCleaner;
 use JiordiViera\LaravelLogCleaner\Tests\CreatesLogFiles;
+use ReflectionMethod;
 
 uses(CreatesLogFiles::class);
 
@@ -26,7 +28,7 @@ it('rejects a second cleaner while a cooperative lock is held', function () {
     expect(flock($handle, LOCK_EX | LOCK_NB))->toBeTrue();
 
     try {
-        expect(fn () => (new LogCleaner)->clearAll())->toThrow(\JiordiViera\LaravelLogCleaner\Exceptions\FileLockException::class);
+        expect(fn () => (new LogCleaner)->clearAll())->toThrow(FileLockException::class);
         expect(file_get_contents($path))->toBe("old log\n");
     } finally {
         flock($handle, LOCK_UN);
