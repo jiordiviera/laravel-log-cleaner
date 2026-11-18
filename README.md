@@ -45,6 +45,7 @@ php artisan log:clear --days=30 --backup
 - **Large files:** stream data to reduce peak memory use.
 - **Health report:** `log:stats` shows size, records per level and date range, and can fail above a size limit.
 - **Scheduling:** optional automatic `log:clear` through Laravel's scheduler.
+- **Dashboard (preview):** optional web page with the health of your logs, in a console style with light and dark themes.
 - **Integrations:** Laravel facade, configurable defaults and lifecycle events.
 
 ## Command options
@@ -97,6 +98,35 @@ The package can register `log:clear` in Laravel's scheduler for you. Enable it i
 ```
 
 Your server still needs Laravel's usual `schedule:run` cron entry (or `php artisan schedule:work`). Check the registration with `php artisan schedule:list`.
+
+## Dashboard (preview)
+
+An optional web dashboard shows the health of your logs in the browser: size, errors and warnings per file, date range, the health limit and the scheduled cleaning status. It is a Vue 3 + Inertia app shipped prebuilt in the package, with its own Inertia root view, so your application does not need to use Inertia itself.
+
+It is **disabled by default**. To enable it:
+
+```bash
+php artisan vendor:publish --tag=log-cleaner-assets
+```
+
+```dotenv
+LOG_CLEANER_DASHBOARD_ENABLED=true
+```
+
+Then open `/log-cleaner`. Outside the `local` environment, access is denied until you define the gates, for example in `AppServiceProvider::boot()`:
+
+```php
+use Illuminate\Support\Facades\Gate;
+
+Gate::define('viewLogCleaner', fn ($user) => $user?->is_admin);
+Gate::define('manageLogCleaner', fn ($user) => $user?->is_admin); // for upcoming cleanup actions
+```
+
+Log files often contain sensitive data: only give access to people who may read them.
+
+The path, domain, middleware, default theme (`paper` or `console`) and font are set under `dashboard` in `config/log-cleaner.php`. Each viewer can switch theme and font from the **display** menu. Scans are cached for 60 seconds (`dashboard.stats_cache_seconds`); the **refresh** button always rescans. After updating the package, publish the assets again with `--force`.
+
+The log viewer, cleanup and archive pages are planned for v2.5 (issues #60–#62).
 
 ## Programmatic usage
 
