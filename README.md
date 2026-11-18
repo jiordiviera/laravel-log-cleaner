@@ -156,7 +156,7 @@ Tests use **Pest**; formatting uses **Laravel Pint**; static analysis runs **PHP
 
 ## Releases and contributions
 
-Changes merged into `main` are **not necessarily published** on Packagist. See the [changelog](CHANGELOG.md) for release history and unreleased changes. The next planned minor release is **v2.4.0**, preserving the v2 public API.
+Changes merged into `main` are **not necessarily published** on Packagist. See the [changelog](CHANGELOG.md) for release history and unreleased changes.
 
 Issues and pull requests are welcome in the [GitHub repository](https://github.com/jiordiviera/laravel-log-cleaner).
 

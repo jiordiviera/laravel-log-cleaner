@@ -7,12 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-11-18
+
 ### Added
-- `log:stats` command: read-only report of log size, records per level, date range and existing backups/archives, with `--file`, `--json` and `--max-size` (exit code 1 above the limit, for monitoring). Also configurable with `health.max_size_mb`.
-- Optional scheduled cleaning: when `schedule.enabled` is true, the package registers `log:clear` in Laravel's scheduler with a configurable cron expression, timezone and command options.
+- `log:stats` command: read-only health report of log size, records per level, date range and existing backups/archives, with `--file`, `--json` and `--max-size` (exit code 1 above the limit, for monitoring). The limit can also be set with `health.max_size_mb`.
+- Optional scheduled cleaning: when `schedule.enabled` is true, the package registers `log:clear` in Laravel's scheduler with a configurable cron expression, timezone and command options. Disabled by default.
 
 ### Internal
-- `LogRecordFilter` exposes `extractDate()` and `detectLevel()`, reused by the cleanup and the new statistics collector.
+- `LogRecordFilter` exposes `extractDate()` and `detectLevel()`, reused by the cleanup and the new statistics collector; cleanup behaviour is unchanged.
+- Added `larastan/larastan` as a dev dependency so `composer analyse` works on a fresh install, and run PHPStan with a 1 GB memory limit.
+- CI: allow Laravel 10/11 releases that have published security advisories in the compatibility matrix, which Composer now blocks by default.
+- Preserved the v2 public API; this is a backward-compatible minor release.
 
 ## [2.3.0] - 2026-10-21
 
