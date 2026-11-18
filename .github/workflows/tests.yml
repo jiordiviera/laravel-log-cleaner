@@ -41,6 +41,10 @@ jobs:
       - name: Install dependencies
         run: |
           composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update
+          # Larastan 3 does not support Laravel 10; static analysis runs in the code-quality job
+          if [ "${{ matrix.laravel }}" = "10.*" ]; then
+            composer remove larastan/larastan --dev --no-interaction --no-update
+          fi
           composer update --prefer-dist --no-interaction --no-progress --optimize-autoloader
 
       - name: Run Package Tests
@@ -114,9 +118,6 @@ jobs:
 
       - name: Run Laravel Pint
         run: composer lint
-
-      - name: Install Larastan for static analysis
-        run: composer require --dev larastan/larastan:^3.0 --with-all-dependencies --no-interaction --no-progress
 
       - name: Run PHPStan
         run: composer analyse
