@@ -18,6 +18,8 @@ class DashboardTest extends TestCase
     protected function defineEnvironment($app): void
     {
         $app['config']->set('log-cleaner.dashboard.enabled', true);
+        // The dashboard runs behind the `web` group, whose cookie encryption needs an app key.
+        $app['config']->set('app.key', 'base64:'.base64_encode(str_repeat('k', 32)));
         $app['config']->set('inertia.testing.ensure_pages_exist', false);
         $app['config']->set('cache.default', 'array');
     }
