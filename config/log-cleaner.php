@@ -179,4 +179,35 @@ return [
         'max_size_mb' => env('LOG_CLEANER_MAX_SIZE_MB'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard
+    |--------------------------------------------------------------------------
+    |
+    | Optional web dashboard (Vue 3 + Inertia, shipped prebuilt in the package).
+    | Disabled by default. Access is controlled by the `viewLogCleaner` gate
+    | (and `manageLogCleaner` for destructive actions). Both default to the
+    | `local` environment only: define them in your app to allow production.
+    | Publish the assets with: php artisan vendor:publish --tag=log-cleaner-assets
+    |
+    */
+
+    'dashboard' => [
+        'enabled' => env('LOG_CLEANER_DASHBOARD_ENABLED', false),
+        'path' => env('LOG_CLEANER_DASHBOARD_PATH', 'log-cleaner'),
+        'domain' => env('LOG_CLEANER_DASHBOARD_DOMAIN'),
+        'middleware' => ['web'],
+
+        // Scanning large logs is slow: the overview is cached this many seconds.
+        // The "refresh" button always rescans. 0 disables the cache.
+        'stats_cache_seconds' => 60,
+
+        // Optional "back to app" link shown in the header.
+        'back_url' => null,
+
+        // Default look; each viewer can change it from the "display" menu.
+        'theme' => 'paper',    // paper | console
+        'font' => 'jetbrains', // jetbrains | plex | inter | app
+    ],
+
 ];

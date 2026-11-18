@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Optional web dashboard (preview), disabled by default: routes under a configurable path, `viewLogCleaner` and `manageLogCleaner` gates (local environment only by default), and an Overview page with log health, per-file stats, levels and scheduled cleaning status. Built with Vue 3 + Inertia, shipped prebuilt in `dist/` and published with `vendor:publish --tag=log-cleaner-assets`. Paper and console themes, selectable font. Scans cached for `dashboard.stats_cache_seconds`.
+
+### Dependencies
+- Requires `inertiajs/inertia-laravel` (`^2.0 || ^3.0`).
+
 ## [2.4.0] - 2026-11-18
 
 ### Added
