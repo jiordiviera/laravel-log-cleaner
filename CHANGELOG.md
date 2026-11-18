@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `log:stats` command: read-only report of log size, records per level, date range and existing backups/archives, with `--file`, `--json` and `--max-size` (exit code 1 above the limit, for monitoring). Also configurable with `health.max_size_mb`.
+- Optional scheduled cleaning: when `schedule.enabled` is true, the package registers `log:clear` in Laravel's scheduler with a configurable cron expression, timezone and command options.
+
+### Internal
+- `LogRecordFilter` exposes `extractDate()` and `detectLevel()`, reused by the cleanup and the new statistics collector.
+
 ## [2.3.0] - 2026-10-21
 
 ### Fixed

@@ -43,6 +43,8 @@ php artisan log:clear --days=30 --backup
 - **Targeted retention:** choose age, log level, custom date pattern or a specific file.
 - **Compression:** save removed entries in a gzip archive.
 - **Large files:** stream data to reduce peak memory use.
+- **Health report:** `log:stats` shows size, records per level and date range, and can fail above a size limit.
+- **Scheduling:** optional automatic `log:clear` through Laravel's scheduler.
 - **Integrations:** Laravel facade, configurable defaults and lifecycle events.
 
 ## Command options
@@ -67,6 +69,34 @@ php artisan log:clear --days=7 --backup --compress
 php artisan log:clear --days=30 --file=laravel.log --dry-run
 php artisan log:clear --days=0 --level=ERROR
 ```
+
+## Log health report
+
+`log:stats` is read-only: it streams each log file and reports its size, records per level, and the oldest and newest record dates, plus the backups and archives left by earlier cleanups.
+
+```bash
+php artisan log:stats
+php artisan log:stats --file=laravel.log
+php artisan log:stats --json
+php artisan log:stats --max-size=500   # exit code 1 above 500 MB, for monitoring
+```
+
+Stack trace lines are not counted as records. The size limit can also be set with `health.max_size_mb` (or `LOG_CLEANER_MAX_SIZE_MB`).
+
+## Scheduled cleaning
+
+The package can register `log:clear` in Laravel's scheduler for you. Enable it in `config/log-cleaner.php` (or with `LOG_CLEANER_SCHEDULE_ENABLED=true`):
+
+```php
+'schedule' => [
+    'enabled' => true,
+    'cron' => '0 2 * * *',      // every day at 02:00
+    'timezone' => null,
+    'options' => ['days' => 30, 'backup' => false, 'compress' => true],
+],
+```
+
+Your server still needs Laravel's usual `schedule:run` cron entry (or `php artisan schedule:work`). Check the registration with `php artisan schedule:list`.
 
 ## Programmatic usage
 
@@ -94,7 +124,7 @@ Publish the optional configuration file:
 php artisan vendor:publish --tag="log-cleaner-config"
 ```
 
-You can adjust the memory threshold, backup retention, compression level, default log level, file-lock timeout and event dispatching in `config/log-cleaner.php`.
+You can adjust the memory threshold, backup retention, compression level, default log level, file-lock timeout, event dispatching, scheduled cleaning and the health size limit in `config/log-cleaner.php`.
 
 ## Events and exceptions
 
@@ -126,7 +156,7 @@ Tests use **Pest**; formatting uses **Laravel Pint**; static analysis runs **PHP
 
 ## Releases and contributions
 
-Changes merged into `main` are **not necessarily published** on Packagist. See the [changelog](CHANGELOG.md) for release history and unreleased changes. The next planned minor release is **v2.3.0**, preserving the v2 public API.
+Changes merged into `main` are **not necessarily published** on Packagist. See the [changelog](CHANGELOG.md) for release history and unreleased changes. The next planned minor release is **v2.4.0**, preserving the v2 public API.
 
 Issues and pull requests are welcome in the [GitHub repository](https://github.com/jiordiviera/laravel-log-cleaner).
 
