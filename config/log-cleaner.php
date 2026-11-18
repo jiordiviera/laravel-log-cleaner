@@ -141,4 +141,42 @@ return [
 
     'verbosity' => 'normal',
 
+    /*
+    |--------------------------------------------------------------------------
+    | Scheduled Cleaning
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, the package registers `log:clear` in Laravel's scheduler,
+    | so you only need the usual `schedule:run` cron entry (or `schedule:work`).
+    | `options` are passed to the command, e.g. ['days' => 30, 'compress' => true].
+    | Boolean flags set to false are omitted.
+    |
+    */
+
+    'schedule' => [
+        'enabled' => env('LOG_CLEANER_SCHEDULE_ENABLED', false),
+        'cron' => env('LOG_CLEANER_SCHEDULE_CRON', '0 2 * * *'), // every day at 02:00
+        'timezone' => null,
+        'options' => [
+            'days' => 30,
+            'backup' => false,
+            'compress' => false,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Health Threshold
+    |--------------------------------------------------------------------------
+    |
+    | Used by `php artisan log:stats`: the command exits with code 1 when the
+    | analysed logs exceed this size (in MB). Leave null to never fail.
+    | The --max-size option overrides this value.
+    |
+    */
+
+    'health' => [
+        'max_size_mb' => env('LOG_CLEANER_MAX_SIZE_MB'),
+    ],
+
 ];

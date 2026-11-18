@@ -27,6 +27,7 @@
     "illuminate/console": "^10.0 || ^11.0 || ^12.0 || ^13.0"
   },
   "require-dev": {
+    "larastan/larastan": "^3.0",
     "laravel/pint": "^1.29",
     "orchestra/testbench": "^8.0|^9.0|^10.0|^11.0",
     "pestphp/pest": "^2.0|^3.0|^4.2",
@@ -36,7 +37,7 @@
   "scripts": {
     "test": "vendor/bin/pest",
     "test-coverage": "vendor/bin/pest --coverage",
-    "analyse": "vendor/bin/phpstan analyse -c phpstan.neon",
+    "analyse": "vendor/bin/phpstan analyse -c phpstan.neon --memory-limit=1G",
     "format": "vendor/bin/pint",
     "lint": "vendor/bin/pint --test"
   },

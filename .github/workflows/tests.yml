@@ -39,8 +39,16 @@ jobs:
           restore-keys: ${{ runner.os }}-composer-${{ matrix.php }}-laravel-${{ matrix.laravel }}-
 
       - name: Install dependencies
+        env:
+          # Every Laravel 10/11 release now has a published security advisory, and Composer
+          # refuses to install those by default. We only test compatibility here, so allow them.
+          COMPOSER_NO_BLOCKING: 1
         run: |
           composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update
+          # Larastan 3 does not support Laravel 10; static analysis runs in the code-quality job
+          if [ "${{ matrix.laravel }}" = "10.*" ]; then
+            composer remove larastan/larastan --dev --no-interaction --no-update
+          fi
           composer update --prefer-dist --no-interaction --no-progress --optimize-autoloader
 
       - name: Run Package Tests
@@ -114,9 +122,6 @@ jobs:
 
       - name: Run Laravel Pint
         run: composer lint
-
-      - name: Install Larastan for static analysis
-        run: composer require --dev larastan/larastan:^3.0 --with-all-dependencies --no-interaction --no-progress
 
       - name: Run PHPStan
         run: composer analyse

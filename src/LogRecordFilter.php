@@ -55,19 +55,45 @@ final class LogRecordFilter
             return true;
         }
 
+        $logDate = $this->extractDate($line);
+
+        return $logDate === null || $logDate->greaterThanOrEqualTo($cutoffDate);
+    }
+
+    /**
+     * Returns the record date (start of day) from a header line, or null when no pattern parses.
+     */
+    public function extractDate(string $line): ?Carbon
+    {
         foreach ($this->patterns as $pattern => $format) {
             if (preg_match($pattern, $line, $matches)) {
                 try {
-                    $logDate = Carbon::createFromFormat($format, $matches[1])->startOfDay();
-
-                    return $logDate->greaterThanOrEqualTo($cutoffDate);
+                    $date = Carbon::createFromFormat($format, $matches[1]);
                 } catch (\Exception $e) {
                     continue;
+                }
+
+                if ($date instanceof Carbon) {
+                    return $date->startOfDay();
                 }
             }
         }
 
-        return true;
+        return null;
+    }
+
+    /**
+     * Returns the Monolog level of a header line (e.g. "local.ERROR:"), or null when none is found.
+     */
+    public function detectLevel(string $line): ?string
+    {
+        foreach (LogCleaner::LOG_LEVELS as $level) {
+            if (preg_match('/\.'.$level.':/', $line)) {
+                return $level;
+            }
+        }
+
+        return null;
     }
 
     private function matchesLevel(string $line, ?string $filterLevel): bool
@@ -76,12 +102,8 @@ final class LogRecordFilter
             return true;
         }
 
-        foreach (LogCleaner::LOG_LEVELS as $level) {
-            if (preg_match('/\.'.$level.':/', $line)) {
-                return strtoupper($filterLevel) === $level;
-            }
-        }
+        $level = $this->detectLevel($line);
 
-        return true;
+        return $level === null || strtoupper($filterLevel) === $level;
     }
 }
