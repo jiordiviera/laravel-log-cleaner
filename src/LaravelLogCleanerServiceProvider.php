@@ -6,9 +6,14 @@ namespace JiordiViera\LaravelLogCleaner;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use JiordiViera\LaravelLogCleaner\Commands\ClearLogCommand;
 use JiordiViera\LaravelLogCleaner\Commands\LogStatsCommand;
+use JiordiViera\LaravelLogCleaner\Dashboard\DashboardAssets;
+use JiordiViera\LaravelLogCleaner\Dashboard\Http\Middleware\Authorize;
+use JiordiViera\LaravelLogCleaner\Dashboard\Http\Middleware\HandleInertiaRequests;
 
 class LaravelLogCleanerServiceProvider extends ServiceProvider
 {
@@ -19,6 +24,9 @@ class LaravelLogCleanerServiceProvider extends ServiceProvider
         });
 
         $this->mergeConfigFrom(__DIR__.'/../config/log-cleaner.php', 'log-cleaner');
+
+        // The dashboard needs Inertia's bindings even when the app disabled package discovery.
+        $this->app->register(\Inertia\ServiceProvider::class);
 
         $this->commands([
             ClearLogCommand::class,
@@ -38,6 +46,43 @@ class LaravelLogCleanerServiceProvider extends ServiceProvider
 
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
             $this->registerSchedule($schedule);
+        });
+
+        $this->bootDashboard();
+    }
+
+    /**
+     * Views, assets, gates and routes of the optional web dashboard.
+     */
+    private function bootDashboard(): void
+    {
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'log-cleaner');
+
+        $this->publishes([
+            __DIR__.'/../dist' => public_path(DashboardAssets::PUBLIC_PATH),
+        ], 'log-cleaner-assets');
+
+        // Apps override these in their own service provider, like Horizon's viewHorizon.
+        foreach (['viewLogCleaner', 'manageLogCleaner'] as $ability) {
+            if (! Gate::has($ability)) {
+                Gate::define($ability, fn ($user = null): bool => $this->app->environment('local'));
+            }
+        }
+
+        if (! Config::get('log-cleaner.dashboard.enabled', false) || $this->app->routesAreCached()) {
+            return;
+        }
+
+        Route::group([
+            'domain' => Config::get('log-cleaner.dashboard.domain'),
+            'prefix' => trim((string) Config::get('log-cleaner.dashboard.path', 'log-cleaner'), '/'),
+            'middleware' => array_merge(
+                (array) Config::get('log-cleaner.dashboard.middleware', ['web']),
+                [Authorize::class, HandleInertiaRequests::class],
+            ),
+            'as' => 'log-cleaner.',
+        ], function (): void {
+            $this->loadRoutesFrom(__DIR__.'/../routes/dashboard.php');
         });
     }
 
