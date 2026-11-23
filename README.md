@@ -47,6 +47,16 @@ php artisan log:clear --days=30 --backup
 - **Scheduling:** optional automatic `log:clear` through Laravel's scheduler.
 - **Integrations:** Laravel facade, configurable defaults and lifecycle events.
 
+## Why and how it is built
+
+Deleting logs by hand on a production server is tedious and easy to get wrong: you can remove entries you still need, or replace a file while the application is writing to it. This package turns that chore into a repeatable command, built around a few deliberate choices:
+
+- **One core, several entry points.** The cleaning logic lives in a single service. The Artisan command, the scheduler and the facade all call it, so a cleanup behaves the same however it is triggered.
+- **Streaming above a memory threshold.** Files larger than `memory_threshold` (50 MB by default), or any file with `--memory-efficient`, are read line by line, so memory use stays flat whatever the log size. Smaller files take the simpler in-memory path.
+- **Never edit a log in place.** Kept entries are written to a temporary file next to the original, the original is checked for changes, then the temporary file replaces it with `rename()`. With `--dry-run` and `--backup`, you can see and keep everything before anything is removed.
+- **Cooperative locking.** Each file gets a non-blocking `flock()` lock, so two cleanups (for example the scheduler and a manual run) never process the same file at once. The trade-off: the lock does not block the application's own log writers (see [Important limitations](#important-limitations)).
+- **Events instead of built-in side effects.** `LogCleaning`, `LogFileCleaned` and `LogCleaned` let you add alerts, audit trails or metrics without changing the package.
+
 ## Command options
 
 | Option | Purpose |
